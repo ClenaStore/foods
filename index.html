@@ -13,6 +13,9 @@
   <!-- Leaflet (mapa no popup) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet Routing Machine (rota até a loja) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
   <!-- QRCode -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
@@ -208,9 +211,9 @@
       <div class="grid2">
         <label>
           <div>Forma de Entrega</div>
-          <div style="display:flex;gap:8px">
-            <button id="entregaBtn" class="btn secondary" onclick="setEntrega('delivery')">Entrega</button>
-            <button class="btn secondary" onclick="setEntrega('pickup')">Retirada</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button data-entrega="delivery" class="btn secondary" onclick="setEntrega(this)">Entrega</button>
+            <button data-entrega="pickup" class="btn secondary" onclick="setEntrega(this)">Retirada</button>
           </div>
         </label>
         <label>
@@ -223,6 +226,20 @@
           </div>
         </label>
       </div>
+
+      <!-- Endereço: só aparece quando entrega -->
+      <div id="addrForm" class="block hidden" style="margin-top:12px">
+        <h3 style="margin:0 0 8px">Endereço de Entrega</h3>
+        <div class="grid2">
+          <label>CEP <input id="f-cep" placeholder="00000-000" class="input"/></label>
+          <label>Cidade <input id="f-cidade" placeholder="Cidade" class="input"/></label>
+          <label>Bairro <input id="f-bairro" placeholder="Bairro" class="input"/></label>
+          <label>Rua/Avenida <input id="f-rua" placeholder="Logradouro" class="input"/></label>
+          <label>Número <input id="f-num" placeholder="Nº" class="input"/></label>
+          <label>Complemento <input id="f-comp" placeholder="Apto/Bloco/Ponto de ref." class="input"/></label>
+        </div>
+      </div>
+
       <div id="pixBox" class="hidden" style="margin-top:12px;border:1px dashed #334155;padding:12px;border-radius:12px">
         <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
           <canvas id="pixQr" width="160" height="160" style="background:#0f1115;border-radius:8px;border:1px solid var(--line)"></canvas>
@@ -238,7 +255,9 @@
       </div>
       <div id="checkoutList" style="margin-top:8px"></div>
       <div class="row" style="border-top:1px dashed #334155"><span>Total</span><strong id="checkoutTotal">R$ 0,00</strong></div>
-      <button class="btn" style="margin-top:12px" onclick="finishOrder()"><i class="fa-solid fa-paper-plane"></i> Confirmar Pedido</button>
+      <button class="btn" id="btnFinish" style="margin-top:12px" onclick="finishOrder()" disabled>
+        <i class="fa-solid fa-paper-plane"></i> Confirmar Pedido
+      </button>
     </section>
 
     <section class="page hidden" id="page-perfil">
@@ -248,12 +267,8 @@
       </div>
       <form id="loginBox" class="block" style="margin-top:12px">
         <h3>Entrar</h3>
-        <label>WhatsApp
-          <input id="pwa" class="input" placeholder="(71) 90000-0000"/>
-        </label>
-        <label>Senha
-          <input id="ppw" type="password" class="input" placeholder="••••••"/>
-        </label>
+        <label>WhatsApp <input id="pwa" class="input" placeholder="(71) 90000-0000"/></label>
+        <label>Senha <input id="ppw" type="password" class="input" placeholder="••••••"/></label>
         <button type="button" class="btn" onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> Entrar</button>
         <p style="color:var(--muted);font-size:13px">Não tem cadastro? Role para criar.</p>
       </form>
@@ -290,16 +305,20 @@
     <!-- DIALOGS -->
     <dialog id="dlgItem"><div id="itemBox"></div></dialog>
 
-    <!-- DIALOG MAPA (abre só quando clica no botão de localização) -->
+    <!-- DIALOG MAPA -->
     <dialog id="dlgMap">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
-        <strong><i class="fa-solid fa-location-dot"></i> Localização & Retirada</strong>
+        <strong><i class="fa-solid fa-location-dot"></i> Localização & Rota</strong>
         <button class="btn secondary" onclick="dlgMap.close()"><i class="fa-solid fa-xmark"></i> Fechar</button>
       </div>
       <div id="mapWrap"><div id="map"></div></div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        <span class="pill"><i class="fa-solid fa-store"></i> Retirada: Pituba, Salvador-BA</span>
-        <span class="pill" id="mapStatus">📍 Aguardando localização…</span>
+        <span class="pill"><i class="fa-solid fa-store"></i> Loja: Pituba, Salvador-BA</span>
+        <span class="pill" id="mapStatus">📍 Loja fixa • Toque para usar sua localização</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn" id="btnUseLoc"><i class="fa-solid fa-person-walking"></i> Usar minha localização</button>
+        <button class="btn secondary" id="btnClearRoute"><i class="fa-solid fa-route"></i> Remover rota</button>
       </div>
     </dialog>
   </div><!-- /#app -->
@@ -341,6 +360,10 @@
   const PIX_CHAVE = 'SEU_PIX_AQUI'; // chave aleatória/CNPJ/CPF/telefone/email
   const PIX_RECEPTOR = 'CLENA FOODS';
   const PIX_CIDADE = 'SALVADOR';
+
+  // ===== COORDENADAS DA LOJA (fixas) =====
+  const STORE_LAT = -12.9979, STORE_LNG = -38.4510; // Pituba (exemplo)
+
   // ======================================================================
 
   const $ = sel => document.querySelector(sel);
@@ -354,15 +377,17 @@
 
   let user = store.get('cf_user', null);
   let token = store.get('cf_token', null);
+  let savedAddr = store.get('cf_addr', null); // endereço salvo localmente
   let cart = store.get('cf_cart', []);
   let entrega = 'delivery';
   let payMethod = 'credito';
   let menu = [];
   let complements = [];
+  let activeCat = null;
 
   const pages = ['menu','complementos','pedidos','perfil'];
 
-  // TAB BAR: abre a tela correspondente
+  // TAB BAR
   $$('.tabbar [data-page]').forEach(btn=>{
     btn.onclick = ()=>{
       $$('.tabbar button').forEach(b=>b.classList.remove('active'));
@@ -387,8 +412,13 @@
     dr.setAttribute('aria-hidden', open? 'false':'true');
   }
 
-  // Busca + filtros
-  document.getElementById('search').addEventListener('input', renderMenu);
+  // ===== Busca (funcional, sem acento, com debounce) =====
+  const normalize = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  let searchTO=null;
+  $('#search').addEventListener('input', e=>{
+    clearTimeout(searchTO);
+    searchTO=setTimeout(()=>{ renderMenu(activeCat); }, 120);
+  });
 
   // API helper
   async function api(acao, payload={}){
@@ -405,13 +435,14 @@
     await loadMenu();
     await loadComplements();
     if(user) applyUser();
-    renderCart(); // atualiza badge + drawer
+    renderCart();
+    updateAuthUI();
   })();
 
   async function loadMenu(){
     const data = await api('getMenu');
     if(data.ok){ menu = data.items; } else {
-      // ===== Fallback: exemplo local (MAIS PRODUTOS) =====
+      // Exemplo local
       menu = [
         {id:'x1', name:'Cheeseburger Clena', desc:'Brioche, burger 160g, queijo e molho da casa.', price:27.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550317138-10000687a72b?q=80&w=800&auto=format&fit=crop'},
         {id:'x2', name:'Smash Duplo', desc:'Dois blends 90g, cheddar, cebola.', price:31.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800&auto=format&fit=crop'},
@@ -446,16 +477,20 @@
     const box = document.getElementById('cats'); box.innerHTML='';
     cats.forEach((c,ix)=>{
       const chip = document.createElement('button'); chip.className='chip'+(ix===0?' active':''); chip.textContent=c;
-      chip.onclick=()=>{ $$('#cats .chip').forEach(x=>x.classList.remove('active')); chip.classList.add('active'); renderMenu(c==='Tudo'? null : c) };
+      chip.onclick=()=>{ $$('#cats .chip').forEach(x=>x.classList.remove('active')); chip.classList.add('active'); activeCat = (c==='Tudo'? null : c); renderMenu(activeCat) };
       box.appendChild(chip);
     });
   }
 
-  function renderMenu(activeCat){
-    const q = document.getElementById('search').value.toLowerCase();
+  function renderMenu(cat){
+    const q = normalize(document.getElementById('search').value);
     const grid = document.getElementById('menuGrid'); grid.innerHTML='';
     menu
-      .filter(i => (!activeCat || i.cat===activeCat) && (i.name.toLowerCase().includes(q) || (i.desc||'').toLowerCase().includes(q)))
+      .filter(i => (!cat || i.cat===cat))
+      .filter(i => {
+        const h = normalize(i.name) + ' ' + normalize(i.desc||'') + ' ' + normalize(i.cat);
+        return h.includes(q);
+      })
       .forEach(i => grid.appendChild(cardItem(i)));
   }
 
@@ -520,11 +555,9 @@
   }
 
   function renderCart(){
-    // Badge
     const count = cart.reduce((a,b)=>a+b.qty,0);
     document.getElementById('cartBadge').textContent = count;
 
-    // Drawer
     const box = document.getElementById('cartItems'); box.innerHTML='';
     if(!cart.length){
       box.innerHTML = `<div class="empty">Seu carrinho está vazio.</div>`;
@@ -554,15 +587,34 @@
 
   function goCheckout(){ setActiveTab('pedidos'); showPage('pedidos'); toggleCart(false); window.scrollTo({top:0,behavior:'smooth'}) }
 
-  function setEntrega(m){ 
-    entrega = m; 
+  // ===== Entrega x Retirada (UI e regras) =====
+  function setEntrega(btnOrMode){
+    const mode = typeof btnOrMode === 'string' ? btnOrMode : btnOrMode.dataset.entrega;
+    entrega = mode;
+    // UI botões
+    $$('#page-pedidos [data-entrega]').forEach(b=> b.classList.remove('active'));
+    const match = $$('#page-pedidos [data-entrega]').find(b=> b.dataset.entrega===mode);
+    if(match) match.classList.add('active');
+    // Mostrar/ocultar formulário de endereço
+    const addr = document.getElementById('addrForm');
+    addr.classList.toggle('hidden', entrega!=='delivery');
+    // Preencher endereço salvo/cadastro
+    if(entrega==='delivery'){
+      const src = (user && user.endereco) ? user.endereco : savedAddr;
+      if(src){
+        $('#f-cep').value = src.cep||''; $('#f-cidade').value = src.cidade||'';
+        $('#f-bairro').value = src.bairro||''; $('#f-rua').value = src.rua||'';
+        $('#f-num').value = src.num||''; $('#f-comp').value = src.comp||'';
+      }
+    }
     renderCart();
   }
+
   function selPay(btn){
     $$('#page-pedidos [data-pay]').forEach(b=> b.classList.remove('active'));
     btn.classList.add('active'); 
     payMethod = btn.dataset.pay; 
-    document.getElementById('pixBox').classList.toggle('hidden', payMethod!=='pix'); 
+    $('#pixBox').classList.toggle('hidden', payMethod!=='pix'); 
     if(payMethod==='pix') createPix();
   }
 
@@ -579,6 +631,40 @@
     });
     const el = document.getElementById('checkoutTotal'); if(el) el.textContent = BRL(total);
     if(payMethod==='pix') createPix();
+  }
+
+  // ===== Login gating =====
+  function updateAuthUI(){
+    $('#btnFinish').disabled = !user;
+  }
+
+  // ===== Finalizar pedido (exige login e endereço quando delivery) =====
+  async function finishOrder(){
+    if(!user){ setActiveTab('perfil'); showPage('perfil'); alert('Você precisa estar logado para finalizar o pedido.'); return }
+    if(!cart.length) return alert('Seu carrinho está vazio.');
+    // Validar endereço quando for entrega
+    let endereco = null;
+    if(entrega==='delivery'){
+      const required = [['f-cep','CEP'],['f-cidade','Cidade'],['f-bairro','Bairro'],['f-rua','Rua/Avenida'],['f-num','Número']];
+      for(const [id,label] of required){
+        if(!$('#'+id).value.trim()) return alert('Preencha: '+label);
+      }
+      endereco = { cep:$('#f-cep').value, cidade:$('#f-cidade').value, bairro:$('#f-bairro').value, rua:$('#f-rua').value, num:$('#f-num').value, comp:$('#f-comp').value };
+      store.set('cf_addr', endereco); // salvar local
+    }
+
+    const order = {
+      entrega, pay: payMethod,
+      endereco,
+      obs: '', // você pode adicionar textarea se quiser
+      items: cart,
+      total: cart.reduce((a,it)=> a + (it.price + (it.comps||[]).reduce((x,y)=>x+y.price,0)) * it.qty, 0)
+    };
+    const r = await api('createOrder', {order});
+    if(!r.ok) return alert('Erro ao enviar pedido: '+(r.error||''));
+    cart=[]; store.set('cf_cart',cart); renderCart();
+    alert('Pedido enviado! Código: '+r.id);
+    setActiveTab('menu'); showPage('menu');
   }
 
   // PIX
@@ -615,24 +701,25 @@
 
   // AUTH
   function applyUser(){
-    document.getElementById('loginBox').classList.add('hidden');
-    document.getElementById('signupBox').classList.add('hidden');
-    document.getElementById('profileBox').classList.remove('hidden');
-    document.getElementById('uNome').textContent = user?.nome || 'Cliente';
-    document.getElementById('uWa').textContent = user?.whatsapp || '';
+    $('#loginBox').classList.add('hidden');
+    $('#signupBox').classList.add('hidden');
+    $('#profileBox').classList.remove('hidden');
+    $('#uNome').textContent = user?.nome || 'Cliente';
+    $('#uWa').textContent = user?.whatsapp || '';
+    updateAuthUI();
   }
   async function login(){
-    const whatsapp = document.getElementById('pwa').value.trim();
-    const senha = document.getElementById('ppw').value.trim();
+    const whatsapp = $('#pwa').value.trim();
+    const senha = $('#ppw').value.trim();
     const r = await api('login', {whatsapp, senha});
     if(r.ok){ user=r.user; token=r.token; store.set('cf_user',user); store.set('cf_token',token); applyUser(); alert('Bem-vindo!') } else alert('Falha no login: '+(r.error||''))
   }
   async function signup(){
-    const payload = { nome:document.getElementById('s-nome').value.trim(), whatsapp:document.getElementById('s-wa').value.trim(), email:document.getElementById('s-mail').value.trim(), senha:document.getElementById('s-senha').value.trim(), cpf:document.getElementById('s-cpf').value.trim(), nasc:document.getElementById('s-nasc').value }
+    const payload = { nome:$('#s-nome').value.trim(), whatsapp:$('#s-wa').value.trim(), email:$('#s-mail').value.trim(), senha:$('#s-senha').value.trim(), cpf:$('#s-cpf').value.trim(), nasc:$('#s-nasc').value }
     const r = await api('signup', payload);
     if(r.ok){ alert('Cadastro realizado! Faça o login.'); setActiveTab('perfil'); showPage('perfil'); } else alert('Erro no cadastro: '+(r.error||''))
   }
-  function logout(){ user=null; token=null; store.del('cf_user'); store.del('cf_token'); location.reload() }
+  function logout(){ user=null; token=null; store.del('cf_user'); store.del('cf_token'); updateAuthUI(); location.reload() }
 
   // NAVEGAÇÃO
   function showPage(id){
@@ -641,34 +728,54 @@
   }
   function closePerfil(){ setActiveTab('menu'); showPage('menu'); }
 
-  // MAPA (POPUP)
-  let map, userMarker, storeMarker, mapReady=false;
+  // ===== MAPA & ROTA (loja fixa, cliente opcional) =====
+  let map, storeMarker, userMarker, routing, mapReady=false;
   function openMapDialog(){
     const dlg = document.getElementById('dlgMap');
     dlg.showModal();
     setTimeout(()=>{ // garante layout pronto
       if(!mapReady){
-        map = L.map('map', {zoomControl:false}).setView([-12.9822, -38.4556], 13); // Salvador
+        map = L.map('map', {zoomControl:false}).setView([STORE_LAT, STORE_LNG], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(map);
-        storeMarker = L.marker([-12.9979, -38.4510]).addTo(map).bindPopup('Clena Foods - Retirada');
+        storeMarker = L.marker([STORE_LAT, STORE_LNG]).addTo(map).bindPopup('Clena Foods - Loja');
         mapReady=true;
       } else {
         map.invalidateSize();
+        map.setView([STORE_LAT, STORE_LNG], 14);
       }
-      // Geo
-      if(navigator.geolocation){
-        navigator.geolocation.getCurrentPosition((pos)=>{
-          const {latitude, longitude} = pos.coords;
-          if(userMarker) userMarker.remove();
-          userMarker = L.marker([latitude, longitude]).addTo(map).bindPopup('Você');
-          map.setView([latitude, longitude], 14);
-          document.getElementById('mapStatus').textContent = '✅ Localização ativa';
-        }, ()=> document.getElementById('mapStatus').textContent = '⚠️ Sem acesso à localização');
-      }else{
-        document.getElementById('mapStatus').textContent = 'ℹ️ Geolocalização indisponível';
-      }
+      document.getElementById('mapStatus').textContent = '📍 Loja fixa • Toque para usar sua localização';
     }, 50);
   }
+
+  $('#btnUseLoc').onclick = ()=>{
+    if(!navigator.geolocation){ document.getElementById('mapStatus').textContent = 'ℹ️ Geolocalização indisponível'; return }
+    document.getElementById('mapStatus').textContent = '⏳ Solicitando sua localização…';
+    navigator.geolocation.getCurrentPosition((pos)=>{
+      const {latitude, longitude} = pos.coords;
+      if(userMarker) userMarker.remove();
+      userMarker = L.marker([latitude, longitude]).addTo(map).bindPopup('Você');
+      map.setView([latitude, longitude], 14);
+      document.getElementById('mapStatus').textContent = '✅ Localização ativa • Rota traçada';
+
+      // Traçar rota até a loja (OSRM demo)
+      if(routing){ routing.remove(); }
+      routing = L.Routing.control({
+        waypoints: [ L.latLng(latitude, longitude), L.latLng(STORE_LAT, STORE_LNG) ],
+        fitSelectedRoutes: true,
+        addWaypoints: false,
+        collapsible: true,
+        show: false,
+        routeWhileDragging: false
+      }).addTo(map);
+    }, ()=> document.getElementById('mapStatus').textContent = '⚠️ Permissão negada');
+  };
+
+  $('#btnClearRoute').onclick = ()=>{
+    if(routing){ routing.remove(); routing=null; }
+    if(userMarker){ userMarker.remove(); userMarker=null; }
+    map.setView([STORE_LAT, STORE_LNG], 14);
+    document.getElementById('mapStatus').textContent = '📍 Loja fixa • Rota removida';
+  };
   </script>
 </body>
 </html>
