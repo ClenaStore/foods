@@ -10,7 +10,7 @@
   <!-- Ícones e fontes -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <!-- Leaflet (mapa) -->
+  <!-- Leaflet (mapa no popup) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- QRCode -->
@@ -44,7 +44,7 @@
       #desktopBlocker{display:flex}
     }
 
-    /* ===== NAVBAR ===== */
+    /* ===== NAVBAR SUPERIOR ===== */
     header{
       position:sticky; top:0; z-index:50;
       backdrop-filter:saturate(1.2) blur(10px);
@@ -87,7 +87,7 @@
     .chip.active{outline:2px solid #2f3542}
 
     /* ===== GRID DE PRODUTOS ===== */
-    .page{padding:8px 14px 0}
+    .page{padding:8px 14px 64px} /* espaço pro tabbar */
     .cards{display:grid; grid-template-columns:1fr; gap:12px}
     .card{
       display:grid; grid-template-columns:86px 1fr; gap:10px;
@@ -105,16 +105,19 @@
     .btn.secondary{background:linear-gradient(180deg, #2b3240, #1c222c)}
     .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
 
-    /* ===== MAPA “ABERTO NA TELA” ===== */
-    #mapWrap{position:fixed; left:0; right:0; bottom:0; height:34vh; z-index:20;
-      background:#0f1115; border-top:1px solid var(--line); box-shadow:0 -10px 30px rgba(0,0,0,.3)}
-    #map{width:100%; height:100%}
-    .mapHeader{
-      position:absolute; top:6px; left:10px; right:10px; z-index:10;
-      display:flex; gap:8px; align-items:center; justify-content:space-between;
+    /* ===== TAB BAR INFERIOR ===== */
+    .tabbar{
+      position:fixed; left:0; right:0; bottom:0; z-index:40;
+      display:flex; justify-content:space-around; align-items:center;
+      padding:8px; gap:8px; background:linear-gradient(0deg, rgba(14,15,18,.95), rgba(14,15,18,.8));
+      border-top:1px solid var(--line);
     }
-    .mapTag{background:rgba(0,0,0,.5); border:1px solid var(--line); color:#fff; padding:6px 10px; border-radius:10px; font-size:12px}
-    .spacer{height:36vh} /* para o conteúdo não ficar escondido atrás do mapa */
+    .tabbar button{
+      flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+      padding:8px 4px; border-radius:12px; border:1px solid var(--line);
+      background:linear-gradient(180deg,#1a1f27,#14181f); color:var(--txt); font-size:11px; font-weight:600
+    }
+    .tabbar button.active{outline:2px solid #2f3542}
 
     /* ===== DRAWER DO CARRINHO ===== */
     #cartDrawer{
@@ -133,12 +136,19 @@
     .totalLine{display:flex; justify-content:space-between; font-size:16px; font-weight:800}
     .empty{color:var(--muted); text-align:center; padding:14px}
 
-    /* Modais */
+    /* DIALOGS (mapa e item) */
     dialog{border:0;border-radius:16px;background:linear-gradient(180deg, #181b22, #14171d);color:var(--txt);width:min(680px,calc(100vw - 24px));box-shadow:var(--shadow)}
     dialog::backdrop{background:rgba(0,0,0,.6)}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
+    /* mapa no dialog */
+    #mapWrap{width:min(680px,calc(100vw - 24px)); height:60vh}
+    #map{width:100%; height:100%; border-radius:12px; border:1px solid var(--line)}
+
     .hidden{display:none !important}
+
+    .input{width:100%;margin-top:4px;padding:12px;border-radius:12px;background:#0f1115;border:1px solid var(--line);color:var(--txt)}
+    .block{background:linear-gradient(180deg,#171a20,#14161b);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
   </style>
 </head>
 <body>
@@ -156,7 +166,7 @@
     <!-- NAV -->
     <header>
       <div class="wrap">
-        <div class="brand">
+        <div class="brand" onclick="showPage('menu')">
           <img src="https://images.unsplash.com/photo-1544027993-37dbfe43562a?q=80&w=120&auto=format&fit=crop" alt="logo"/>
           <div>
             <div class="t1">CLENA FOODS</div>
@@ -164,12 +174,12 @@
           </div>
         </div>
         <div class="actions">
-          <button class="iconbtn" id="btnMapFocus" title="Centralizar no mapa"><i class="fa-solid fa-location-dot"></i></button>
+          <button class="iconbtn" id="btnMap" title="Localização"><i class="fa-solid fa-location-dot"></i></button>
           <button class="iconbtn" id="btnCart" title="Carrinho">
             <i class="fa-solid fa-bag-shopping"></i>
             <span class="badge" id="cartBadge">0</span>
           </button>
-          <button class="iconbtn" onclick="showPage('perfil')" title="Perfil"><i class="fa-solid fa-user"></i></button>
+          <button class="iconbtn" id="btnPerfil" title="Perfil"><i class="fa-solid fa-user"></i></button>
         </div>
       </div>
 
@@ -187,11 +197,12 @@
     <!-- CONTEÚDO -->
     <section class="page" id="page-menu">
       <div class="cards" id="menuGrid"></div>
-      <div class="spacer"></div>
     </section>
 
-    <!-- PÁGINAS EXTRAS (mesmas do seu projeto) -->
-    <section class="page hidden" id="page-complementos"><div class="cards" id="compsGrid"></div><div class="spacer"></div></section>
+    <section class="page hidden" id="page-complementos">
+      <div class="cards" id="compsGrid"></div>
+    </section>
+
     <section class="page hidden" id="page-pedidos">
       <h2>Checkout</h2>
       <div class="grid2">
@@ -228,12 +239,14 @@
       <div id="checkoutList" style="margin-top:8px"></div>
       <div class="row" style="border-top:1px dashed #334155"><span>Total</span><strong id="checkoutTotal">R$ 0,00</strong></div>
       <button class="btn" style="margin-top:12px" onclick="finishOrder()"><i class="fa-solid fa-paper-plane"></i> Confirmar Pedido</button>
-      <div class="spacer"></div>
     </section>
 
     <section class="page hidden" id="page-perfil">
-      <h2>Minha Conta</h2>
-      <form id="loginBox" class="block">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <h2 style="margin:0">Minha Conta</h2>
+        <button class="btn secondary" onclick="closePerfil()"><i class="fa-solid fa-xmark"></i> Fechar</button>
+      </div>
+      <form id="loginBox" class="block" style="margin-top:12px">
         <h3>Entrar</h3>
         <label>WhatsApp
           <input id="pwa" class="input" placeholder="(71) 90000-0000"/>
@@ -264,20 +277,31 @@
           <div style="margin-left:auto"><button class="btn secondary" onclick="logout()">Sair</button></div>
         </div>
       </div>
-      <div class="spacer"></div>
     </section>
 
-    <!-- MAPA FIXO -->
-    <div id="mapWrap">
-      <div class="mapHeader">
-        <div class="mapTag"><i class="fa-solid fa-store"></i> Retirada: Pituba, Salvador-BA</div>
-        <div class="mapTag" id="mapStatus">📍 Localizando…</div>
-      </div>
-      <div id="map"></div>
-    </div>
+    <!-- TAB BAR -->
+    <nav class="tabbar">
+      <button data-page="menu" class="active"><i class="fa-solid fa-burger"></i><span>Cardápio</span></button>
+      <button data-page="complementos"><i class="fa-solid fa-plus"></i><span>Extras</span></button>
+      <button data-page="pedidos"><i class="fa-solid fa-receipt"></i><span>Pedidos</span></button>
+      <button data-page="perfil"><i class="fa-solid fa-user"></i><span>Perfil</span></button>
+    </nav>
 
     <!-- DIALOGS -->
     <dialog id="dlgItem"><div id="itemBox"></div></dialog>
+
+    <!-- DIALOG MAPA (abre só quando clica no botão de localização) -->
+    <dialog id="dlgMap">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
+        <strong><i class="fa-solid fa-location-dot"></i> Localização & Retirada</strong>
+        <button class="btn secondary" onclick="dlgMap.close()"><i class="fa-solid fa-xmark"></i> Fechar</button>
+      </div>
+      <div id="mapWrap"><div id="map"></div></div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="pill"><i class="fa-solid fa-store"></i> Retirada: Pituba, Salvador-BA</span>
+        <span class="pill" id="mapStatus">📍 Aguardando localização…</span>
+      </div>
+    </dialog>
   </div><!-- /#app -->
 
   <!-- DRAWER DO CARRINHO -->
@@ -297,11 +321,6 @@
       </div>
     </div>
   </aside>
-
-  <style>
-    .input{width:100%;margin-top:4px;padding:12px;border-radius:12px;background:#0f1115;border:1px solid var(--line);color:var(--txt)}
-    .block{background:linear-gradient(180deg,#171a20,#14161b);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
-  </style>
 
   <script>
   /* ===== Enforce mobile only ===== */
@@ -343,8 +362,25 @@
 
   const pages = ['menu','complementos','pedidos','perfil'];
 
-  // NAV interações
+  // TAB BAR: abre a tela correspondente
+  $$('.tabbar [data-page]').forEach(btn=>{
+    btn.onclick = ()=>{
+      $$('.tabbar button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      showPage(btn.dataset.page);
+      if(btn.dataset.page!=='perfil') toggleCart(false);
+    };
+  });
+
+  // Ícones da navbar
   $('#btnCart').onclick = ()=> toggleCart(true);
+  $('#btnPerfil').onclick = ()=> { setActiveTab('perfil'); showPage('perfil'); };
+  $('#btnMap').onclick = openMapDialog;
+
+  function setActiveTab(page){
+    $$('.tabbar button').forEach(b=> b.classList.toggle('active', b.dataset.page===page));
+  }
+
   function toggleCart(open){
     const dr = document.getElementById('cartDrawer');
     dr.classList.toggle('open', open);
@@ -366,10 +402,8 @@
 
   // Carregar dados iniciais
   (async function init(){
-    $$('#cats').forEach(e=>e.innerHTML='');
     await loadMenu();
     await loadComplements();
-    initMap();
     if(user) applyUser();
     renderCart(); // atualiza badge + drawer
   })();
@@ -480,7 +514,10 @@
   }
   function inc(i){ cart[i].qty++; store.set('cf_cart',cart); renderCart() }
   function dec(i){ cart[i].qty>1? cart[i].qty-- : cart.splice(i,1); store.set('cf_cart',cart); renderCart() }
-  function clearCart(){ cart=[]; store.set('cf_cart',cart); renderCart() }
+  function clearCart(){
+    if(!cart.length) return;
+    if(confirm('Tem certeza que deseja limpar o carrinho?')){ cart=[]; store.set('cf_cart',cart); renderCart(); }
+  }
 
   function renderCart(){
     // Badge
@@ -515,11 +552,10 @@
     renderCheckout();
   }
 
-  function goCheckout(){ showPage('pedidos'); toggleCart(false); window.scrollTo({top:0,behavior:'smooth'}) }
+  function goCheckout(){ setActiveTab('pedidos'); showPage('pedidos'); toggleCart(false); window.scrollTo({top:0,behavior:'smooth'}) }
 
   function setEntrega(m){ 
     entrega = m; 
-    document.getElementById('mapStatus').textContent = m==='delivery' ? '🚚 Entrega selecionada' : '🏁 Retirada selecionada';
     renderCart();
   }
   function selPay(btn){
@@ -594,7 +630,7 @@
   async function signup(){
     const payload = { nome:document.getElementById('s-nome').value.trim(), whatsapp:document.getElementById('s-wa').value.trim(), email:document.getElementById('s-mail').value.trim(), senha:document.getElementById('s-senha').value.trim(), cpf:document.getElementById('s-cpf').value.trim(), nasc:document.getElementById('s-nasc').value }
     const r = await api('signup', payload);
-    if(r.ok){ alert('Cadastro realizado! Faça o login.'); showPage('perfil'); } else alert('Erro no cadastro: '+(r.error||''))
+    if(r.ok){ alert('Cadastro realizado! Faça o login.'); setActiveTab('perfil'); showPage('perfil'); } else alert('Erro no cadastro: '+(r.error||''))
   }
   function logout(){ user=null; token=null; store.del('cf_user'); store.del('cf_token'); location.reload() }
 
@@ -603,29 +639,35 @@
     pages.forEach(p=> document.getElementById('page-'+p)?.classList.toggle('hidden', p!==id));
     window.scrollTo(0,0);
   }
+  function closePerfil(){ setActiveTab('menu'); showPage('menu'); }
 
-  // MAPA
-  let map, userMarker, storeMarker;
-  function initMap(){
-    map = L.map('map', {zoomControl:false}).setView([-12.9822, -38.4556], 13); // Salvador
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(map);
-    storeMarker = L.marker([-12.9979, -38.4510]).addTo(map).bindPopup('Clena Foods - Retirada');
-    // Tenta geolocalização
-    if(navigator.geolocation){
-      navigator.geolocation.getCurrentPosition((pos)=>{
-        const {latitude, longitude} = pos.coords;
-        if(userMarker) userMarker.remove();
-        userMarker = L.marker([latitude, longitude]).addTo(map).bindPopup('Você');
-        map.setView([latitude, longitude], 14);
-        document.getElementById('mapStatus').textContent = '✅ Localização ativa';
-      }, ()=> document.getElementById('mapStatus').textContent = '⚠️ Sem acesso à localização');
-    }else{
-      document.getElementById('mapStatus').textContent = 'ℹ️ Geolocalização indisponível';
-    }
-    document.getElementById('btnMapFocus').onclick = ()=>{
-      if(userMarker){ map.setView(userMarker.getLatLng(), 15); userMarker.openPopup(); }
-      else { map.setView(storeMarker.getLatLng(), 15); storeMarker.openPopup(); }
-    };
+  // MAPA (POPUP)
+  let map, userMarker, storeMarker, mapReady=false;
+  function openMapDialog(){
+    const dlg = document.getElementById('dlgMap');
+    dlg.showModal();
+    setTimeout(()=>{ // garante layout pronto
+      if(!mapReady){
+        map = L.map('map', {zoomControl:false}).setView([-12.9822, -38.4556], 13); // Salvador
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(map);
+        storeMarker = L.marker([-12.9979, -38.4510]).addTo(map).bindPopup('Clena Foods - Retirada');
+        mapReady=true;
+      } else {
+        map.invalidateSize();
+      }
+      // Geo
+      if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition((pos)=>{
+          const {latitude, longitude} = pos.coords;
+          if(userMarker) userMarker.remove();
+          userMarker = L.marker([latitude, longitude]).addTo(map).bindPopup('Você');
+          map.setView([latitude, longitude], 14);
+          document.getElementById('mapStatus').textContent = '✅ Localização ativa';
+        }, ()=> document.getElementById('mapStatus').textContent = '⚠️ Sem acesso à localização');
+      }else{
+        document.getElementById('mapStatus').textContent = 'ℹ️ Geolocalização indisponível';
+      }
+    }, 50);
   }
   </script>
 </body>
