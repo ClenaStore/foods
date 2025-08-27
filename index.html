@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clena Foods • Cardápio & Pedidos</title>
+  <meta name="description" content="Catálogo de produtos, complementos e pedidos com login por WhatsApp + senha e pagamento PIX (QR Code)." />
+  
+  <!-- Ícones e fontes -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0e0f12; --panel:#15171c; --soft:#1d1f26; --line:#292c36; --brand:#e63946; --brand-2:#ff8f1f; --txt:#f7f8fa; --muted:#cbd5e1; --ok:#22c55e; --bad:#ef4444; --warn:#f59e0b;
+      --shadow: 0 10px 25px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.3);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:radial-gradient(1000px 600px at 10% -20%, rgba(230,57,70,.12), transparent),
+                      radial-gradient(800px 500px at 110% 10%, rgba(255,143,31,.10), transparent), var(--bg);
+      color:var(--txt);font-family:Inter, system-ui, Arial, sans-serif;}
+    a{color:inherit}
+
+    header{position:sticky;top:0;z-index:50;backdrop-filter:saturate(1.2) blur(10px);background:linear-gradient(180deg, rgba(21,23,28,.9), rgba(21,23,28,.65)); border-bottom:1px solid var(--line)}
+    .wrap{max-width:1100px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;gap:14px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand img{width:36px;height:36px;border-radius:50%;box-shadow:var(--shadow)}
+    .brand .t1{font-weight:800;letter-spacing:.3px}
+    .brand .t2{font-size:12px;color:var(--muted)}
+
+    nav{margin-left:auto;display:flex;gap:8px}
+    nav button{appearance:none;border:0;padding:10px 14px;border-radius:12px;background:var(--soft);color:var(--txt);font-weight:600;cursor:pointer;border:1px solid var(--line)}
+    nav button.active{background:linear-gradient(180deg, #2a2f3a, #20242d);outline:2px solid #2f3542}
+
+    .page{max-width:1100px;margin:24px auto;padding:0 18px}
+    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+    .card{background:linear-gradient(180deg, #171a20, #14161b);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);position:relative}
+    .card .img{aspect-ratio:4/3;background:#0f1115;overflow:hidden}
+    .card .img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+    .card:hover .img img{transform:scale(1.05)}
+    .card .body{padding:12px 12px 14px}
+    .card .name{font-weight:700}
+    .price{font-weight:800;color:#fcd34d}
+    .btn{appearance:none;border:0;padding:10px 12px;border-radius:12px;background:linear-gradient(180deg, #f97316, #ea580c);color:white;font-weight:800;cursor:pointer}
+    .btn.secondary{background:linear-gradient(180deg, #313744, #212733)}
+    .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+
+    .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .search{flex:1;display:flex;gap:8px}
+    .search input{flex:1;padding:12px 14px;border-radius:12px;background:#0f1115;border:1px solid var(--line);color:var(--txt)}
+    .chipz{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{padding:8px 12px;border-radius:99px;background:var(--soft);border:1px solid var(--line);cursor:pointer}
+    .chip.active{outline:2px solid #2f3542;background:linear-gradient(180deg,#2a2f3a,#20242d)}
+
+    .layout{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .cart{position:sticky;top:84px;height:fit-content;background:linear-gradient(180deg,#171a20,#13151a);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+    .cart h3{margin:6px 0 10px}
+    .cart .row{display:flex;align-items:center;justify-content:space-between;border-bottom:1px dashed #283141;padding:8px 0}
+    .cart .qty{display:flex;align-items:center;gap:8px}
+    .cart .qty button{width:28px;height:28px;border-radius:10px;background:#0f1115;border:1px solid var(--line);color:var(--txt);cursor:pointer}
+
+    .tabs{display:flex;gap:8px;margin:12px 0}
+    .tabs button{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--soft);color:var(--txt);cursor:pointer}
+    .tabs button.active{background:linear-gradient(180deg,#2a2f3a,#20242d)}
+
+    .pill{display:inline-flex;gap:8px;align-items:center;background:#0f1115;border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+
+    footer{margin:40px 0 24px;color:var(--muted);text-align:center}
+
+    /* Modais */
+    dialog{border:0;border-radius:16px;background:linear-gradient(180deg, #181b22, #14171d);color:var(--txt);width:min(680px,calc(100vw - 24px));box-shadow:var(--shadow)}
+    dialog::backdrop{background:rgba(0,0,0,.6)}
+
+    .media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+    .media{background:#0f1115;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+    .media video,.media img{width:100%;height:140px;object-fit:cover;display:block}
+
+    .hidden{display:none !important}
+    .blink{animation:blink 1s infinite alternate}
+    @keyframes blink{to{opacity:.5}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="brand">
+        <img src="https://images.unsplash.com/photo-1544027993-37dbfe43562a?q=80&w=120&auto=format&fit=crop" alt="logo"/>
+        <div>
+          <div class="t1">CLENA FOODS</div>
+          <div class="t2">Hamburgueria • Delivery & Retirada</div>
+        </div>
+      </div>
+      <nav>
+        <button data-page="menu" class="active"><i class="fa-solid fa-burger"></i> Cardápio</button>
+        <button data-page="complementos"><i class="fa-solid fa-plus"></i> Complementos</button>
+        <button data-page="pedidos"><i class="fa-solid fa-bag-shopping"></i> Pedidos</button>
+        <button data-page="perfil"><i class="fa-solid fa-user"></i> Perfil</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- PÁGINA: CARDÁPIO -->
+  <section class="page" id="page-menu">
+    <div class="toolbar">
+      <div class="search">
+        <input id="search" placeholder="Buscar por nome, descrição ou ingrediente…" />
+        <span class="pill"><i class="fa-solid fa-location-dot"></i> <span id="deliveryArea">Entrega: consulte CEP</span></span>
+      </div>
+      <button class="btn" onclick="openMedia()"><i class="fa-solid fa-photo-film"></i> Fotos & Vídeos</button>
+    </div>
+
+    <div class="chipz" id="cats"></div>
+
+    <div class="layout">
+      <div>
+        <div class="cards" id="menuGrid"></div>
+      </div>
+      <aside class="cart" id="cart">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+          <h3>Meu Carrinho</h3>
+          <button class="btn secondary" onclick="clearCart()"><i class="fa-solid fa-trash"></i> Limpar</button>
+        </div>
+        <div id="cartItems"></div>
+        <div style="padding-top:10px">
+          <div class="row"><span>Subtotal</span><strong id="subTotal">R$ 0,00</strong></div>
+          <div class="row"><span>Taxa de entrega</span><strong id="shipTax">–</strong></div>
+          <div class="row"><span>Descontos</span><strong id="discount">–</strong></div>
+          <div class="row" style="font-size:18px"><span>Total</span><strong id="grandTotal">R$ 0,00</strong></div>
+        </div>
+        <button class="btn" style="width:100%;margin-top:10px" onclick="goCheckout()"><i class="fa-solid fa-credit-card"></i> Finalizar Pedido</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- PÁGINA: COMPLEMENTOS -->
+  <section class="page hidden" id="page-complementos">
+    <div class="toolbar">
+      <h2 style="margin:0">Complementos</h2>
+      <div class="tabs" id="tabs-comps"></div>
+    </div>
+    <div class="cards" id="compsGrid"></div>
+  </section>
+
+  <!-- PÁGINA: PEDIDOS -->
+  <section class="page hidden" id="page-pedidos">
+    <div class="grid2">
+      <div>
+        <h2 style="margin-top:0">Checkout</h2>
+        <div class="grid2">
+          <label>
+            <div>Forma de Entrega</div>
+            <div class="tabs">
+              <button id="entregaBtn" class="active" onclick="setEntrega('delivery')">Entrega</button>
+              <button onclick="setEntrega('pickup')">Retirada</button>
+            </div>
+          </label>
+          <label>
+            <div>Pagamento</div>
+            <div class="tabs">
+              <button data-pay="credito" class="active" onclick="selPay(this)"><i class="fa-solid fa-credit-card"></i> Crédito</button>
+              <button data-pay="debito" onclick="selPay(this)">Débito</button>
+              <button data-pay="dinheiro" onclick="selPay(this)">Dinheiro</button>
+              <button data-pay="pix" onclick="selPay(this)">PIX</button>
+            </div>
+          </label>
+        </div>
+
+        <div id="pixBox" class="hidden" style="margin-top:12px;border:1px dashed #334155;padding:12px;border-radius:12px">
+          <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+            <canvas id="pixQr" width="160" height="160" style="background:#0f1115;border-radius:8px;border:1px solid var(--line)"></canvas>
+            <div style="flex:1;min-width:240px">
+              <div style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+                <strong>PIX – Copia e Cola</strong>
+                <button class="btn secondary" onclick="copyPix()"><i class="fa-regular fa-copy"></i> Copiar</button>
+              </div>
+              <textarea id="pixCop" rows="3" style="width:100%;margin-top:8px;background:#0f1115;border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:8px" readonly></textarea>
+              <small style="color:var(--muted)">Após o pagamento, seu pedido é confirmado automaticamente.</small>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px">
+          <h3>Resumo</h3>
+          <div id="checkoutList"></div>
+          <div class="row" style="display:flex;justify-content:space-between;border-top:1px dashed #334155;padding-top:8px">
+            <span>Total</span><strong id="checkoutTotal">R$ 0,00</strong>
+          </div>
+        </div>
+
+        <button class="btn" style="margin-top:14px" onclick="finishOrder()"><i class="fa-solid fa-paper-plane"></i> Confirmar Pedido</button>
+      </div>
+
+      <aside>
+        <h2 style="margin-top:0">Endereço de Entrega</h2>
+        <div class="grid2">
+          <label>CEP
+            <input id="f-cep" placeholder="00000-000" class="input"/>
+          </label>
+          <label>Cidade
+            <input id="f-cidade" placeholder="Cidade" class="input"/>
+          </label>
+          <label>Bairro
+            <input id="f-bairro" placeholder="Bairro" class="input"/>
+          </label>
+          <label>Rua/Avenida
+            <input id="f-rua" placeholder="Logradouro" class="input"/>
+          </label>
+          <label>Número
+            <input id="f-num" placeholder="Nº" class="input"/>
+          </label>
+          <label>Complemento
+            <input id="f-comp" placeholder="Apto/Bloco/Ponto de ref." class="input"/>
+          </label>
+        </div>
+        <label>
+          <div style="margin-top:10px">Observações do pedido</div>
+          <textarea id="f-obs" rows="3" style="width:100%;background:#0f1115;border:1px solid var(--line);border-radius:12px;color:var(--txt);padding:10px"></textarea>
+        </label>
+      </aside>
+    </div>
+
+    <div style="margin-top:26px">
+      <h2>Meus Pedidos</h2>
+      <div id="orders"></div>
+    </div>
+  </section>
+
+  <!-- PÁGINA: PERFIL -->
+  <section class="page hidden" id="page-perfil">
+    <h2 style="margin-top:0">Minha Conta</h2>
+    <div class="grid2">
+      <form id="loginBox" class="block">
+        <h3>Entrar</h3>
+        <label>WhatsApp
+          <input id="pwa" class="input" placeholder="(71) 90000-0000"/>
+        </label>
+        <label>Senha
+          <input id="ppw" type="password" class="input" placeholder="••••••"/>
+        </label>
+        <button type="button" class="btn" onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> Entrar</button>
+        <p style="color:var(--muted);font-size:13px">Ainda não tem cadastro? Preencha ao lado.</p>
+      </form>
+
+      <form id="signupBox" class="block">
+        <h3>Criar conta</h3>
+        <div class="grid2">
+          <label>Nome completo
+            <input id="s-nome" class="input"/>
+          </label>
+          <label>WhatsApp
+            <input id="s-wa" class="input" placeholder="(71) 90000-0000"/>
+          </label>
+          <label>E-mail
+            <input id="s-mail" class="input"/>
+          </label>
+          <label>Senha
+            <input id="s-senha" type="password" class="input"/>
+          </label>
+          <label>CPF (opcional)
+            <input id="s-cpf" class="input"/>
+          </label>
+          <label>Data de nascimento (opcional)
+            <input id="s-nasc" type="date" class="input"/>
+          </label>
+        </div>
+        <button type="button" class="btn" onclick="signup()"><i class="fa-solid fa-user-plus"></i> Cadastrar</button>
+      </form>
+    </div>
+
+    <div id="profileBox" class="hidden" style="margin-top:24px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:48px;height:48px;border-radius:50%;background:#0f1115;border:1px solid var(--line);display:grid;place-items:center"><i class="fa-solid fa-user"></i></div>
+        <div>
+          <div id="uNome" style="font-weight:800"></div>
+          <div id="uWa" style="color:var(--muted);font-size:13px"></div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn secondary" onclick="logout()">Sair</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DIALOG: MEDIA -->
+  <dialog id="dlgMedia">
+    <div style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+      <h3 style="margin:0">Galeria — Fotos e Vídeos</h3>
+      <button class="btn ghost" onclick="dlgMedia.close()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <p style="margin-top:6px;color:var(--muted)">Arquivos lidos do Google Drive. Configure o <em>folderId</em> no Apps Script para listar aqui automaticamente.</p>
+    <div class="media-grid" id="mediaGrid"></div>
+  </dialog>
+
+  <!-- DIALOG: ITEM -->
+  <dialog id="dlgItem">
+    <div id="itemBox"></div>
+  </dialog>
+
+  <footer>© <span id="yy"></span> Clena Foods • Todos os direitos reservados</footer>
+
+  <style>
+    .input{width:100%;margin-top:4px;padding:12px;border-radius:12px;background:#0f1115;border:1px solid var(--line);color:var(--txt)}
+    .block{background:linear-gradient(180deg,#171a20,#14161b);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+  </style>
+
+  <script>
+  // ========================== CONFIGURAÇÃO ===============================
+  const API_URL = 'https://script.google.com/macros/s/SEU_WEBAPP_AQUI/exec'; // <- Apps Script WebApp
+  const PIX_CHAVE = 'SEU_PIX_AQUI'; // chave aleatória/CNPJ/CPF/telefone/email
+  const PIX_RECEPTOR = 'CLENA FOODS';
+  const PIX_CIDADE = 'SALVADOR';
+  // ======================================================================
+
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const BRL = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const store = {
+    get(k,def){ try{ return JSON.parse(localStorage.getItem(k)) ?? def }catch{ return def } },
+    set(k,v){ localStorage.setItem(k, JSON.stringify(v)) },
+    del(k){ localStorage.removeItem(k) }
+  }
+
+  let user = store.get('cf_user', null);
+  let token = store.get('cf_token', null);
+  let cart = store.get('cf_cart', []);
+  let entrega = 'delivery';
+  let payMethod = 'credito';
+  let menu = [];
+  let complements = [];
+
+  const pages = ['menu','complementos','pedidos','perfil'];
+  $$('#yy').forEach(e=> e.textContent = new Date().getFullYear());
+
+  // Navegação
+  $$('nav button').forEach(b=> b.onclick = () => showPage(b.dataset.page));
+  function showPage(id){
+    $$('nav button').forEach(b=> b.classList.toggle('active', b.dataset.page===id));
+    pages.forEach(p=> $('#page-'+p).classList.toggle('hidden', p!==id));
+  }
+
+  // Busca + filtros
+  $('#search').addEventListener('input', renderMenu);
+
+  // API helper
+  async function api(acao, payload={}){
+    try{
+      const res = await fetch(API_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({acao, token, ...payload})});
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      return data;
+    }catch(e){ console.error('API', acao, e); return {ok:false, error: e.message} }
+  }
+
+  // Carregar dados iniciais
+  (async function init(){
+    renderCart();
+    await loadMenu();
+    await loadComplements();
+    await loadMedia();
+    if(user) applyUser();
+  })();
+
+  async function loadMenu(){
+    const data = await api('getMenu');
+    if(data.ok){ menu = data.items; } else {
+      // Fallback: exemplo local
+      menu = [
+        {id:'x1', name:'Cheeseburger Clena', desc:'Pão brioche, burger 160g, queijo, alface, tomate e molho da casa.', price:27.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550317138-10000687a72b?q=80&w=800&auto=format&fit=crop'},
+        {id:'x2', name:'Smash duplo', desc:'Dois blends smash 90g, cheddar e cebola.', price:31.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800&auto=format&fit=crop'},
+        {id:'x3', name:'Batata rústica', desc:'Batatas com páprica e alho.', price:15.9, cat:'Acompanhamentos', img:'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800&auto=format&fit=crop'},
+        {id:'x4', name:'Refrigerante', desc:'Lata 350ml', price:6.0, cat:'Bebidas', img:'https://images.unsplash.com/photo-1541976076758-347942db1970?q=80&w=800&auto=format&fit=crop'}
+      ];
+    }
+    renderCategories();
+    renderMenu();
+  }
+
+  async function loadComplements(){
+    const data = await api('getComplements');
+    if(data.ok){ complements = data.items } else {
+      complements = [
+        {id:'c1', name:'Bacon', price:4.0, tag:'Adicionais'},
+        {id:'c2', name:'Cheddar extra', price:3.5, tag:'Adicionais'},
+        {id:'c3', name:'Molho Clena', price:2.5, tag:'Molhos'},
+        {id:'c4', name:'Barbecue', price:2.5, tag:'Molhos'},
+      ];
+    }
+    renderComplements();
+  }
+
+  // MEDIA (Google Drive via Apps Script)
+  async function loadMedia(){
+    const data = await api('listMedia');
+    const grid = $('#mediaGrid'); grid.innerHTML='';
+    if(data.ok){
+      data.items.forEach(m => {
+        const el = document.createElement('div');
+        el.className='media';
+        if(m.type==='video'){
+          el.innerHTML = `<video src="${m.url}" controls preload="metadata"></video>`
+        }else{
+          el.innerHTML = `<img src="${m.thumbnail||m.url}" alt="midia" loading="lazy"/>`;
+        }
+        grid.appendChild(el);
+      });
+    }
+  }
+
+  function openMedia(){ $('#dlgMedia').showModal(); }
+
+  function renderCategories(){
+    const cats = [...new Set(menu.map(i=> i.cat))];
+    const box = $('#cats'); box.innerHTML='';
+    const btnAll = document.createElement('div');
+    btnAll.className='chip active'; btnAll.textContent='Tudo'; btnAll.onclick=()=>{ $$('.chip').forEach(c=>c.classList.remove('active')); btnAll.classList.add('active'); renderMenu(); };
+    box.appendChild(btnAll);
+    cats.forEach(c => {
+      const chip = document.createElement('div'); chip.className='chip'; chip.textContent=c;
+      chip.onclick=()=>{ $$('.chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); renderMenu(c) };
+      box.appendChild(chip);
+    });
+  }
+
+  function renderMenu(activeCat){
+    const q = $('#search').value.toLowerCase();
+    const grid = $('#menuGrid'); grid.innerHTML='';
+    menu.filter(i => (!activeCat || i.cat===activeCat) && (i.name.toLowerCase().includes(q) || i.desc.toLowerCase().includes(q)))
+        .forEach(i => grid.appendChild(cardItem(i)));
+  }
+
+  function cardItem(i){
+    const el = document.createElement('div'); el.className='card';
+    el.innerHTML = `
+      <div class="img"><img src="${i.img}" alt="${i.name}" loading="lazy"></div>
+      <div class="body">
+        <div class="name">${i.name}</div>
+        <div style="color:var(--muted);font-size:13px;margin:4px 0 8px">${i.desc||''}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="price">${BRL(i.price)}</div>
+          <button class="btn" onclick='openItem(${JSON.stringify(i)})'>Adicionar</button>
+        </div>
+      </div>`;
+    return el;
+  }
+
+  function openItem(i){
+    const compHtml = complements.map(c=>
+      `<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" data-compid="${c.id}" data-compprice="${c.price}"/> ${c.name} <span style="margin-left:auto">${BRL(c.price)}</span></label>`
+    ).join('');
+    const html = `
+      <div class="grid2" style="gap:16px">
+        <div><img src="${i.img}" alt="${i.name}" style="width:100%;border-radius:12px;border:1px solid var(--line)"/></div>
+        <div>
+          <h3 style="margin:0">${i.name}</h3>
+          <p style="color:var(--muted)">${i.desc||''}</p>
+          <div class="pill" style="margin:8px 0">Preço base <strong>${BRL(i.price)}</strong></div>
+          <h4>Complementos</h4>
+          <div style="display:grid;gap:6px;max-height:180px;overflow:auto;padding-right:6px">${compHtml||'<em style="color:var(--muted)">Nenhum complemento cadastrado</em>'}</div>
+          <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+            <button class="btn" id="addBtn">Adicionar ao carrinho</button>
+            <button class="btn secondary" onclick="dlgItem.close()">Cancelar</button>
+          </div>
+        </div>
+      </div>`;
+    $('#itemBox').innerHTML = html;
+    $('#addBtn').onclick = () => {
+      const chec = Array.from($('#dlgItem').querySelectorAll('input[type=checkbox]:checked'))
+                  .map(ch => ({ id: ch.dataset.compid, name: complements.find(c=>c.id===ch.dataset.compid)?.name || 'Extra', price: Number(ch.dataset.compprice) }));
+      addToCart({ id:i.id, name:i.name, price:i.price, qty:1, img:i.img, comps:chec });
+      dlgItem.close();
+    }
+    $('#dlgItem').showModal();
+  }
+
+  function addToCart(item){
+    const k = JSON.stringify({id:item.id, comps:item.comps.map(c=>c.id).sort()});
+    const found = cart.find(x => JSON.stringify({id:x.id, comps:x.comps.map(c=>c.id).sort()})===k);
+    if(found){ found.qty += 1 } else { cart.push(item) }
+    store.set('cf_cart', cart); renderCart();
+  }
+
+  function renderCart(){
+    const box = $('#cartItems'); box.innerHTML='';
+    let sub = 0;
+    cart.forEach((it,ix)=>{
+      const extras = it.comps?.length? `<div style="color:var(--muted);font-size:12px">+ ${it.comps.map(c=>c.name).join(', ')}</div>` : '';
+      const total = (it.price + (it.comps||[]).reduce((a,b)=>a+b.price,0)) * it.qty; sub += total;
+      const row = document.createElement('div'); row.className='row';
+      row.innerHTML = `
+        <div style="max-width:60%">
+          <div style="font-weight:600">${it.name}</div>
+          ${extras}
+        </div>
+        <div class="qty">
+          <button onclick="dec(${ix})">-</button><span>${it.qty}</span><button onclick="inc(${ix})">+</button>
+          <strong style="width:90px;text-align:right">${BRL(total)}</strong>
+        </div>`;
+      box.appendChild(row);
+    });
+    $('#subTotal').textContent = BRL(sub);
+    $('#shipTax').textContent = entrega==='delivery' ? 'A calcular' : 'R$ 0,00';
+    $('#discount').textContent = '—';
+    $('#grandTotal').textContent = BRL(sub); // taxa/desc aplicados no checkout
+    renderCheckout();
+  }
+  function inc(i){ cart[i].qty++; store.set('cf_cart',cart); renderCart() }
+  function dec(i){ cart[i].qty>1? cart[i].qty-- : cart.splice(i,1); store.set('cf_cart',cart); renderCart() }
+  function clearCart(){ cart=[]; store.set('cf_cart',cart); renderCart() }
+
+  function goCheckout(){ showPage('pedidos'); window.scrollTo({top:0,behavior:'smooth'}) }
+
+  function setEntrega(m){ entrega = m; $$('#page-pedidos .tabs button').forEach(b=> b.classList.toggle('active', b.textContent.includes(m==='delivery'?'Entrega':'Retirada'))); renderCart() }
+  function selPay(btn){ $$('#page-pedidos [data-pay]').forEach(b=> b.classList.remove('active')); btn.classList.add('active'); payMethod = btn.dataset.pay; $('#pixBox').classList.toggle('hidden', payMethod!=='pix'); if(payMethod==='pix') createPix() }
+
+  function renderComplements(){
+    const tabs = [...new Set(complements.map(c=>c.tag||'Outros'))];
+    const tbox = $('#tabs-comps'); tbox.innerHTML='';
+    const first = document.createElement('button'); first.textContent='Tudo'; first.className='active'; first.onclick=()=>filter(''); tbox.appendChild(first);
+    tabs.forEach(t=>{ const b=document.createElement('button'); b.textContent=t; b.onclick=()=>filter(t); tbox.appendChild(b) });
+    const grid = $('#compsGrid');
+    function filter(tag){
+      $$('#tabs-comps button').forEach(b=>b.classList.remove('active'));
+      const bt = Array.from($$('#tabs-comps button')).find(b=>b.textContent=== (tag||'Tudo')); if(bt) bt.classList.add('active');
+      grid.innerHTML='';
+      complements.filter(c=> !tag || c.tag===tag).forEach(c=>{
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML = `<div class="body">
+            <div class="name">${c.name}</div>
+            <div class="price">${BRL(c.price)}</div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn" onclick='addToCart({id:"comp-"+"${c.id}", name:"${c.name}", price:${c.price}, qty:1, img:"", comps:[]})'>Adicionar</button>
+              <button class="btn secondary" onclick='showPage("pedidos");'>Ir ao carrinho</button>
+            </div>
+        </div>`;
+        grid.appendChild(card);
+      });
+    }
+    filter('');
+  }
+
+  function renderCheckout(){
+    const box = $('#checkoutList'); box.innerHTML='';
+    let total = 0;
+    cart.forEach(it=>{
+      const extras = it.comps?.length? ` (+${it.comps.map(c=>c.name).join(', ')})` : '';
+      const t = (it.price + (it.comps||[]).reduce((a,b)=>a+b.price,0)) * it.qty; total += t;
+      const row = document.createElement('div'); row.className='row';
+      row.innerHTML = `<span>${it.qty}× ${it.name}${extras}</span><strong>${BRL(t)}</strong>`;
+      box.appendChild(row);
+    });
+    $('#checkoutTotal').textContent = BRL(total);
+    if(payMethod==='pix') createPix();
+  }
+
+  // PIX (gera BR Code Copia-e-Cola localmente e QR com qrious)
+  function emv(field, value){ const len = String(value.length).padStart(2,'0'); return field + len + value }
+  function pixPayload({nome, cidade, chave, valor, txid='CF' + Date.now().toString().slice(-8)}){
+    // GUI PIX 0002012658... com CRC16
+    const gui = emv('00','01');
+    const mpm = '11'; // 11 = dynamic? 12 static. Usaremos 12 (static) com txid
+    const method = emv('00','BR.GOV.BCB.PIX') + (chave? emv('01', chave):'');
+    const mer = emv('26', method);
+    const cat = emv('52','0000');
+    const curr = emv('53','986');
+    const amount = valor? emv('54', String(valor.toFixed(2))) : '';
+    const ctry = emv('58','BR');
+    const city = emv('60', (cidade||'BRASILIA').substring(0,15).toUpperCase());
+    const name = emv('59', (nome||'RECEBEDOR').substring(0,25).toUpperCase());
+    const add = emv('62', emv('05', txid.substring(0,25)));
+    let body = emv('00','01') + emv('01', mpm) + mer + cat + curr + amount + ctry + name + city + add + '6304';
+    const crc = crc16(body).toUpperCase();
+    return body + crc;
+  }
+  function crc16(str){
+    let crc = 0xFFFF;
+    for(let i=0;i<str.length;i++){
+      crc ^= str.charCodeAt(i) << 8;
+      for(let j=0;j<8;j++) crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+      crc &= 0xFFFF;
+    }
+    return crc.toString(16).padStart(4,'0');
+  }
+  function createPix(){
+    const total = cart.reduce((a,it)=> a + (it.price + (it.comps||[]).reduce((x,y)=>x+y.price,0)) * it.qty, 0);
+    const payload = pixPayload({nome: PIX_RECEPTOR, cidade: PIX_CIDADE, chave: PIX_CHAVE, valor: total});
+    $('#pixCop').value = payload;
+    const qr = new QRious({element: $('#pixQr'), value: payload, size: 160});
+  }
+  function copyPix(){
+    $('#pixCop').select(); document.execCommand('copy');
+    const b = event.target.closest('button'); const txt = b.innerHTML; b.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+    setTimeout(()=> b.innerHTML = txt, 1400);
+  }
+
+  // AUTH
+  function applyUser(){
+    $('#loginBox').classList.add('hidden');
+    $('#signupBox').classList.add('hidden');
+    $('#profileBox').classList.remove('hidden');
+    $('#uNome').textContent = user?.nome || 'Cliente';
+    $('#uWa').textContent = user?.whatsapp || '';
+  }
+  async function login(){
+    const whatsapp = $('#pwa').value.trim();
+    const senha = $('#ppw').value.trim();
+    const r = await api('login', {whatsapp, senha});
+    if(r.ok){ user=r.user; token=r.token; store.set('cf_user',user); store.set('cf_token',token); applyUser(); alert('Bem-vindo!') } else alert('Falha no login: '+(r.error||''))
+  }
+  async function signup(){
+    const payload = { nome:$('#s-nome').value.trim(), whatsapp:$('#s-wa').value.trim(), email:$('#s-mail').value.trim(), senha:$('#s-senha').value.trim(), cpf:$('#s-cpf').value.trim(), nasc:$('#s-nasc').value }
+    const r = await api('signup', payload);
+    if(r.ok){ alert('Cadastro realizado! Faça o login.'); showPage('perfil'); } else alert('Erro no cadastro: '+(r.error||''))
+  }
+  function logout(){ user=null; token=null; store.del('cf_user'); store.del('cf_token'); location.reload() }
+
+  // PEDIDO
+  async function finishOrder(){
+    if(!cart.length) return alert('Seu carrinho está vazio.');
+    if(!user) { showPage('perfil'); return alert('Entre na sua conta para finalizar o pedido.'); }
+
+    const order = {
+      entrega, pay: payMethod,
+      endereco: {cep:$('#f-cep').value, cidade:$('#f-cidade').value, bairro:$('#f-bairro').value, rua:$('#f-rua').value, num:$('#f-num').value, comp:$('#f-comp').value},
+      obs: $('#f-obs').value,
+      items: cart,
+      total: cart.reduce((a,it)=> a + (it.price + (it.comps||[]).reduce((x,y)=>x+y.price,0)) * it.qty, 0)
+    };
+    const r = await api('createOrder', {order});
+    if(!r.ok) return alert('Erro ao enviar pedido: '+(r.error||''));
+    clearCart();
+    alert('Pedido enviado! Código: '+r.id);
+    listOrders();
+  }
+
+  async function listOrders(){
+    const r = await api('listOrders');
+    const box = $('#orders'); box.innerHTML='';
+    if(r.ok){
+      r.items.forEach(o=>{
+        const div = document.createElement('div'); div.className='block';
+        div.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div><strong>Pedido #${o.id}</strong><div style="color:var(--muted);font-size:12px">${new Date(o.created_at||Date.now()).toLocaleString()}</div></div>
+            <div class="pill">Status: <strong>${o.status||'Recebido'}</strong></div>
+            <div class="pill">Total: <strong>${BRL(o.total)}</strong></div>
+          </div>`;
+        box.appendChild(div);
+      })
+    }
+  }
+
+  // UTIL: mascarar WhatsApp rapidamente
+  function maskWa(v){
+    return v.replace(/\D/g,'').slice(-11).replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  }
+  $('#pwa').addEventListener('input', e=> e.target.value = maskWa(e.target.value));
+  $('#s-wa').addEventListener('input', e=> e.target.value = maskWa(e.target.value));
+  </script>
+</body>
+</html>
+
+<!-- =====================================================================
+BACKEND (Google Apps Script) — cole em um novo projeto Apps Script 
+Publicar > Implantar como aplicativo da web (executar como você, acesso: Qualquer pessoa com o link)
+Planilhas sugeridas (abas):
+  - produtos: id, name, desc, price, cat, img
+  - complementos: id, name, price, tag
+  - clientes: id, nome, whatsapp, email, senha_hash, cpf, nasc, created_at
+  - pedidos: id, user_id, json, total, status, created_at
+  - midia: id, type(img|video), url, thumbnail
+  (ou use uma pasta do Drive e liste por Folder ID)
+======================================================================== -->
+<script type="text/plain" id="GAS-example">
+function doPost(e){
+  const dados = JSON.parse(e.postData.contents||'{}');
+  const acao = dados.acao; const token = dados.token||'';
+  const ss = SpreadsheetApp.openById('SHEET_ID_AQUI');
+  const db = o=> ss.getSheetByName(o);
+  const json = o=> ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+  const ok = (payload={})=> json({ok:true, ...payload});
+  const bad = (m)=> json({ok:false, error:String(m||'Erro')});
+
+  try{
+    if(acao==='getMenu'){
+      const sh = db('produtos'); const vals = sh.getDataRange().getDisplayValues();
+      const h = vals.shift(); const items = vals.filter(r=>r[0]).map(r=> ({id:r[0], name:r[1], desc:r[2], price:Number(r[3].replace(',','.')), cat:r[4], img:r[5]}));
+      return ok({items});
+    }
+    if(acao==='getComplements'){
+      const sh = db('complementos'); const vals = sh.getDataRange().getDisplayValues();
+      const h=vals.shift(); const items = vals.filter(r=>r[0]).map(r=> ({id:r[0], name:r[1], price:Number(r[2].replace(',','.')), tag:r[3]}));
+      return ok({items});
+    }
+    if(acao==='listMedia'){
+      const sh = db('midia'); const vals = sh.getDataRange().getDisplayValues();
+      vals.shift(); const items = vals.map(r=> ({id:r[0], type:r[1], url:r[2], thumbnail:r[3]}));
+      return ok({items});
+    }
+    if(acao==='signup'){
+      const u = dados; const sh = db('clientes');
+      const id = 'U'+Date.now(); const hash = Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, u.senha));
+      sh.appendRow([id,u.nome,u.whatsapp,u.email,hash,u.cpf,u.nasc,new Date()]);
+      return ok();
+    }
+    if(acao==='login'){
+      const sh = db('clientes'); const vals = sh.getDataRange().getValues(); vals.shift();
+      const hash = Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, dados.senha));
+      const row = vals.find(r=> String(r[2])===String(dados.whatsapp) && String(r[4])===hash);
+      if(!row) return bad('Credenciais inválidas');
+      const token = Utilities.getUuid();
+      CacheService.getScriptCache().put('t_'+token, String(row[0]), 6*3600);
+      return ok({user:{id:row[0], nome:row[1], whatsapp:row[2], email:row[3]}, token});
+    }
+    if(acao==='listOrders'){
+      const userId = CacheService.getScriptCache().get('t_'+token) || '';
+      if(!userId) return bad('Não autenticado');
+      const sh = db('pedidos'); const vals = sh.getDataRange().getValues(); vals.shift();
+      const items = vals.filter(r=> String(r[1])===userId).map(r=> ({id:r[0], user_id:r[1], total:r[3], status:r[4], created_at:r[5]}));
+      return ok({items});
+    }
+    if(acao==='createOrder'){
+      const userId = CacheService.getScriptCache().get('t_'+token) || '';
+      if(!userId) return bad('Não autenticado');
+      const sh = db('pedidos');
+      const id = 'P'+Date.now();
+      const total = dados.order.total;
+      sh.appendRow([id, userId, JSON.stringify(dados.order), total, 'Recebido', new Date()]);
+      return ok({id});
+    }
+  }catch(err){ return bad(err.message) }
+  return bad('Ação inválida');
+}
+</script>
