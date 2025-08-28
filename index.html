@@ -615,11 +615,7 @@
     menuSkeleton(); 
     await loadMenu();
     await loadComplements();
-    if(user) { 
-      applyUser(); 
-      await fetchOrders({showSkeleton:true});
-      startOrdersAutoRefresh(10000);   // <-- auto-refresh a cada 10s
-    }
+    if(user) { applyUser(); fetchOrders(); }
     renderCart();
     updateAuthUI();
     setupNotifications();
@@ -628,13 +624,6 @@
     addrRenderList();
     await bootFeesHours();           // define lojaAberta e atualiza UI
     setInterval(bootFeesHours, 60000);
-
-    // Quando a aba volta para o foco, atualiza pedidos
-    document.addEventListener('visibilitychange', ()=>{
-      if(!document.hidden && user){
-        fetchOrders({showSkeleton:false});
-      }
-    });
   })();
 
   async function loadMenu(){
@@ -676,6 +665,7 @@
       setActiveTab('perfil'); showPage('perfil');
       return;
     }
+    // Bloqueio quando fechado
     if(!lojaAberta){
       const status = getOpenStatusLocal();
       alert(`Estamos fechados no momento. ${status.message}.`);
@@ -843,6 +833,7 @@
     $('#btnCartFinish').disabled = !lojaAberta;
     $('#closedHint').classList.toggle('hidden', lojaAberta);
     $('#closedHintCart').classList.toggle('hidden', lojaAberta);
+    // Desabilita "Adicionar" existentes (ao alternar aberto/fechado sem re-render)
     $$('#menuGrid .card .btn').forEach(b=>{
       b.disabled = !lojaAberta;
       b.textContent = lojaAberta ? 'Adicionar' : 'Fechado';
@@ -878,7 +869,7 @@
     if(!r.ok) return;
     cart=[]; store.set('cf_cart',cart); renderCart();
     alert('Pedido enviado! Código: '+r.id);
-    setActiveTab('perfil'); showPage('perfil'); fetchOrders({showSkeleton:true});
+    setActiveTab('perfil'); showPage('perfil'); fetchOrders();
   }
 
   function applyUser(){
@@ -900,9 +891,7 @@
       user=r.user; token=r.token; 
       store.set('cf_user',user); store.set('cf_token',token); 
       applyUser(); alert('Bem-vindo!'); 
-      await fetchOrders({showSkeleton:true});
-      startOrdersAutoRefresh(10000);   // <-- liga auto-refresh após login
-      startPolling();
+      fetchOrders(); startPolling();
     } else {
       alert('Falha no login: '+(r.error||'')); 
     }
@@ -924,26 +913,20 @@
     else { alert('Erro no cadastro: '+(r.error||'')) }
   }
 
-  function logout(){
-    stopOrdersAutoRefresh();         // <-- garante parar o timer
-    user=null; token=null; store.del('cf_user'); store.del('cf_token'); location.reload()
-  }
+  function logout(){ user=null; token=null; store.del('cf_user'); store.del('cf_token'); location.reload() }
 
   // ===== HISTÓRICO =====
-  async function fetchOrders({showSkeleton=true} = {}){
+  async function fetchOrders(){
     if(!user) return;
-    if(showSkeleton) ordersSkeleton();
+    ordersSkeleton();
     const r = await api('listOrders');
-    renderOrdersList(r.ok ? (r.items||[]) : []);
-  }
-
-  function renderOrdersList(items){
     const box = $('#ordersList'); box.innerHTML='';
 
     const payMap = { pix:'PIX', credito:'Crédito', debito:'Débito', dinheiro:'Dinheiro' };
 
-    if(items.length){
-      items.forEach(o=>{
+    if(r.ok && r.items?.length){
+      r.items.forEach(o=>{
+        // Compatível mesmo que a API ainda não retorne entrega/pagamento diretamente
         const entregaVal = o?.entrega ?? o?.order?.entrega; 
         const payVal     = o?.pay     ?? o?.order?.pay;
 
@@ -1093,7 +1076,7 @@
     }else{
       alert(`${title}\n\n${body}`);
     }
-    if(n.order_id) fetchOrders({showSkeleton:false});
+    if(n.order_id) fetchOrders();
   }
 
   // ===== Endereços =====
@@ -1207,7 +1190,7 @@
     renderCheckout();
   }
 
-  // Atualiza UI aberto/fechado
+  // NOVO: Atualiza UI de aberto/fechado
   function updateOpenUI(isOpen, message){
     lojaAberta = !!isOpen;
 
@@ -1217,12 +1200,14 @@
       badge.style.color = isOpen ? 'var(--ok)' : 'var(--bad)';
     }
 
+    // Cards / botões
     updateAuthUI();
+    // Re-render para refletir estado nas listagens
     renderMenu(activeCat);
   }
 
   async function bootFeesHours(){
-    // 1) TAXAS
+    // 1) TAXAS – separado do horário para não quebrar o badge se falhar
     try {
       const fees = await api('getFees');
       if (fees.ok){
@@ -1232,9 +1217,10 @@
       }
     } catch(e){
       console.warn('Falha ao carregar taxas:', e);
+      // não mexer no badge aqui
     }
 
-    // 2) HORÁRIO (local)
+    // 2) HORÁRIO — sempre calcula localmente
     try {
       const open = getOpenStatusLocal();
       updateOpenUI(open.open, open.message);
@@ -1316,23 +1302,6 @@
     showInstallButton(false);
     if (outcome !== 'accepted') setTimeout(()=> showInstallButton(true), 8000);
   });
-
-  /* ======= AUTO-REFRESH DE PEDIDOS (10s) ======= */
-  let ORDERS_AUTO_TIMER = null;
-
-  function startOrdersAutoRefresh(ms = 10000){
-    if(!user){ stopOrdersAutoRefresh(); return; }
-    stopOrdersAutoRefresh();
-    const tick = ()=> {
-      if(document.hidden) return;
-      fetchOrders({showSkeleton:false});
-    };
-    tick(); // primeira execução imediata
-    ORDERS_AUTO_TIMER = setInterval(tick, ms);
-  }
-  function stopOrdersAutoRefresh(){
-    if(ORDERS_AUTO_TIMER){ clearInterval(ORDERS_AUTO_TIMER); ORDERS_AUTO_TIMER = null; }
-  }
   </script>
 </body>
 </html>
