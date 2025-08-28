@@ -1119,30 +1119,6 @@ async function bootFeesHours(){
     renderCheckout();
   }
 
-  // ====== HORÁRIOS (aberto/fechado) ======
-  function parseHm(hm){ const [h,m]=hm.split(':').map(Number); return h*60+m; }
-  function nowMinutes(){ const d=new Date(); return d.getHours()*60 + d.getMinutes(); }
-  function isOpenNow(){
-    const d=new Date(); const dow=d.getDay();
-    const cfg=HORARIOS[dow]||[];
-    if(cfg.length!==2) return false;
-    const [ini,end]=cfg.map(parseHm);
-    const n=nowMinutes();
-    if(end<=ini){ // fecha após meia-noite
-      return (n>=ini || n<end);
-    }
-    return (n>=ini && n<end);
-  }
-  function humanTodayHours(){
-    const d=new Date(); const cfg=HORARIOS[d.getDay()]||[];
-    if(cfg.length!==2) return 'fechado';
-    return cfg[0]+'–'+cfg[1];
-  }
-  function updateOpenBadge(){
-    const el = $('#openBadge'); if(!el) return;
-    const ok = isOpenNow();
-    el.innerHTML = (ok? '🟢 Aberto' : '🔴 Fechado') + ' • hoje ' + humanTodayHours();
-  }
 
   // ===== NAVEGAÇÃO AUX =====
   function showPage(id){ pages.forEach(p=> $('#page-'+p)?.classList.toggle('hidden', p!==id)); window.scrollTo(0,0); }
