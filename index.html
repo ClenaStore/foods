@@ -6,19 +6,22 @@
   <title>Clena Foods • Cardápio & Pedidos</title>
   <meta name="description" content="Catálogo de produtos, complementos e pedidos com login por WhatsApp + senha, PIX e notificações." />
 
+  <!-- Ícones e fontes -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
   <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+  <!-- QRCode -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
   <style>
     :root{
       --bg:#0e0f12; --panel:#14161a; --soft:#1a1f27; --line:#262b36;
       --brand:#e63946; --brand-2:#ff8f1f; --txt:#f7f8fa; --muted:#cbd5e1;
-      --ok:#22c55e; --bad:#ef4444; --warn:#f59e0b; --shadow:0 12px 28px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.25);
+      --ok:#22c55e; --bad:#ef4444; --warn:#f59e0b; --shadow: 0 12px 28px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.25);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -26,42 +29,72 @@
                       radial-gradient(800px 500px at 110% 10%, rgba(255,143,31,.10), transparent), var(--bg);
       color:var(--txt);font-family:Inter, system-ui, Arial, sans-serif;}
 
-    #desktopBlocker{position:fixed; inset:0; display:none; align-items:center; justify-content:center; text-align:center;
-      padding:24px; background:linear-gradient(180deg,#0e0f12,#0b0c10); color:var(--txt); z-index:99999;}
-    #desktopBlocker .box{max-width:560px; background:linear-gradient(180deg,#171a20,#14161b); border:1px solid var(--line); border-radius:16px; padding:24px; box-shadow:var(--shadow)}
-    #desktopBlocker h1{margin:0 0 8px; font-size:22px} #desktopBlocker p{margin:0; color:var(--muted)}
-    @media (min-width: 768px){ #app{display:none !important} #desktopBlocker{display:flex}}
+    /* ===== BLOQUEIO DESKTOP ===== */
+    #desktopBlocker{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center; text-align:center;
+      padding:24px; background:linear-gradient(180deg,#0e0f12,#0b0c10); color:var(--txt); z-index:99999;
+    }
+    #desktopBlocker .box{
+      max-width:560px; background:linear-gradient(180deg,#171a20,#14161b);
+      border:1px solid var(--line); border-radius:16px; padding:24px; box-shadow:var(--shadow)
+    }
+    #desktopBlocker h1{margin:0 0 8px; font-size:22px}
+    #desktopBlocker p{margin:0; color:var(--muted)}
+    @media (min-width: 768px){
+      #app{display:none !important}
+      #desktopBlocker{display:flex}
+    }
 
-    header{position:sticky; top:0; z-index:50; backdrop-filter:saturate(1.2) blur(10px);
-      background:linear-gradient(180deg, rgba(20,22,26,.92), rgba(20,22,26,.6)); border-bottom:1px solid var(--line)}
+    /* ===== NAVBAR ===== */
+    header{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter:saturate(1.2) blur(10px);
+      background:linear-gradient(180deg, rgba(20,22,26,.92), rgba(20,22,26,.6));
+      border-bottom:1px solid var(--line);
+    }
     .wrap{padding:12px 14px; display:flex; align-items:center; gap:10px}
     .brand{display:flex;align-items:center;gap:10px}
     .brand img{width:34px;height:34px;border-radius:10px;box-shadow:var(--shadow)}
     .brand .t1{font-weight:800;letter-spacing:.2px;font-size:15px}
     .brand .t2{font-size:11px;color:var(--muted)}
+
     .actions{margin-left:auto; display:flex; align-items:center; gap:10px}
-    .iconbtn{position:relative; display:grid; place-items:center; width:38px; height:38px; border-radius:12px;
-      background:linear-gradient(180deg,#1a1f27,#14181f); border:1px solid var(--line); color:var(--txt); cursor:pointer}
-    .badge{position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 5px; background:linear-gradient(180deg,#f97316,#ea580c);
-      color:#fff; border-radius:999px; font-size:11px; display:grid; place-items:center; font-weight:800; box-shadow:0 2px 6px rgba(0,0,0,.4)}
+    .iconbtn{
+      position:relative; display:grid; place-items:center;
+      width:38px; height:38px; border-radius:12px;
+      background:linear-gradient(180deg,#1a1f27,#14181f);
+      border:1px solid var(--line); color:var(--txt); cursor:pointer;
+    }
+    .badge{
+      position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 5px;
+      background:linear-gradient(180deg,#f97316,#ea580c); color:#fff; border-radius:999px;
+      font-size:11px; display:grid; place-items:center; font-weight:800; box-shadow:0 2px 6px rgba(0,0,0,.4);
+    }
 
-    .topbar{padding:10px 14px; display:flex; gap:10px; align-items:center}
-    .search{flex:1; display:flex; gap:8px; align-items:center; background:linear-gradient(180deg,#12161c,#0f1318);
-      border:1px solid var(--line); border-radius:12px; padding:10px 12px}
+    /* ===== BUSCA + CATEGORIAS ===== */
+    .topbar{padding:10px 14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .search{flex:1; display:flex; gap:8px; align-items:center;
+      background:linear-gradient(180deg,#12161c,#0f1318); border:1px solid var(--line);
+      border-radius:12px; padding:10px 12px; min-width:220px}
     .search input{flex:1; background:transparent; border:0; outline:none; color:var(--txt); font-size:14px}
-    .pill{display:inline-flex;gap:8px;align-items:center;background:#0f1115;border:1px solid var(--line);
-      border-radius:12px;padding:8px 10px;font-size:12px;color:var(--muted)}
-    .topbar-loader{height:3px; background:linear-gradient(90deg,var(--brand),var(--brand-2)); background-size:200% 100%; animation:move 1.2s linear infinite}
-    @keyframes move{0%{background-position:0 0}100%{background-position:200% 0}}
+    .pill{display:inline-flex;gap:8px;align-items:center;background:#0f1115;border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:12px;color:var(--muted)}
 
-    .cats{padding:0 14px 8px 14px; display:flex; gap:8px; overflow:auto; mask-image:linear-gradient(90deg, transparent 0,#000 25px,#000 calc(100% - 25px), transparent 100%)}
-    .chip{flex:0 0 auto; padding:8px 12px; border-radius:999px; border:1px solid var(--line); background:linear-gradient(180deg,#1a1f27,#14181f); color:var(--txt); font-weight:600}
+    .cats{
+      padding:0 14px 8px 14px; display:flex; gap:8px; overflow:auto;
+      mask-image: linear-gradient(90deg, transparent 0, #000 25px, #000 calc(100% - 25px), transparent 100%);
+    }
+    .chip{flex:0 0 auto; padding:8px 12px; border-radius:999px; border:1px solid var(--line);
+      background:linear-gradient(180deg,#1a1f27,#14181f); color:var(--txt); font-weight:600}
     .chip.active{outline:2px solid #2f3542}
 
+    /* ===== GRID ===== */
     .page{padding:8px 14px 64px}
     .cards{display:grid; grid-template-columns:1fr; gap:12px}
-    .card{display:grid; grid-template-columns:86px 1fr; gap:10px; background:linear-gradient(180deg,#151921,#12161c);
-      border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:var(--shadow)}
+    .card{
+      display:grid; grid-template-columns:86px 1fr; gap:10px;
+      background:linear-gradient(180deg,#151921,#12161c);
+      border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:var(--shadow);
+    }
     .card .img{width:86px; height:86px; overflow:hidden; border-right:1px solid var(--line)}
     .card .img img{width:100%;height:100%;object-fit:cover;display:block; transition:transform .35s ease}
     .card:active .img img{transform:scale(1.05)}
@@ -69,27 +102,49 @@
     .name{font-weight:800; font-size:14px}
     .desc{color:var(--muted); font-size:12px; line-height:1.25; margin:3px 0 6px}
     .price{font-weight:800;color:#fcd34d}
-    .btn{appearance:none;border:0;padding:10px 12px;border-radius:12px;background:linear-gradient(180deg,#f97316,#ea580c);color:white;font-weight:800; cursor:pointer; position:relative}
-    .btn.secondary{background:linear-gradient(180deg,#2b3240,#1c222c)}
+    .btn{appearance:none;border:0;padding:10px 12px;border-radius:12px;background:linear-gradient(180deg, #f97316, #ea580c);color:white;font-weight:800; cursor:pointer}
+    .btn.secondary{background:linear-gradient(180deg, #2b3240, #1c222c)}
+    .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
     .btn.busy{opacity:.7; pointer-events:none}
     .btn .spin{width:14px;height:14px;border-radius:50%;border:2px solid #fff;border-top-color:transparent;display:inline-block;margin-right:6px;vertical-align:-2px;animation:spin .8s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .row{display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px dashed #283141}
-    .empty{color:var(--muted); text-align:center; padding:14px}
 
-    #cartDrawer{position:fixed; top:0; right:0; bottom:0; width:92vw; max-width:420px; z-index:60;
-      background:linear-gradient(180deg,#161a22,#12161c); border-left:1px solid var(--line); transform:translateX(100%); transition:.28s ease; box-shadow:var(--shadow); display:flex; flex-direction:column}
+    /* ===== TAB BAR ===== */
+    .tabbar{
+      position:fixed; left:0; right:0; bottom:0; z-index:40;
+      display:flex; justify-content:space-around; align-items:center;
+      padding:8px; gap:8px; background:linear-gradient(0deg, rgba(14,15,18,.95), rgba(14,15,18,.8));
+      border-top:1px solid var(--line);
+    }
+    .tabbar button{
+      flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+      padding:8px 4px; border-radius:12px; border:1px solid var(--line);
+      background:linear-gradient(180deg,#1a1f27,#14181f); color:var(--txt); font-size:11px; font-weight:600; cursor:pointer
+    }
+    .tabbar button.active{outline:2px solid #2f3542}
+
+    /* ===== DRAWER CARRINHO ===== */
+    #cartDrawer{
+      position:fixed; top:0; right:0; bottom:0; width:92vw; max-width:420px; z-index:60;
+      background:linear-gradient(180deg,#161a22,#12161c); border-left:1px solid var(--line);
+      transform:translateX(100%); transition:.28s ease; box-shadow:var(--shadow);
+      display:flex; flex-direction:column;
+    }
     #cartDrawer.open{transform:translateX(0)}
     .drawerHead{display:flex; align-items:center; gap:8px; padding:14px; border-bottom:1px solid var(--line)}
     .drawerBody{flex:1; overflow:auto; padding:12px}
     .drawerFoot{padding:12px; border-top:1px solid var(--line); display:grid; gap:10px}
+    .row{display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px dashed #283141}
     .qty{display:flex;align-items:center;gap:8px}
     .qty button{width:28px;height:28px;border-radius:10px;background:#0f1115;border:1px solid var(--line);color:var(--txt); cursor:pointer}
+    .totalLine{display:flex; justify-content:space-between; font-size:16px; font-weight:800}
+    .empty{color:var(--muted); text-align:center; padding:14px}
 
+    /* ===== DIALOGS ===== */
     dialog{border:0;border-radius:16px;background:linear-gradient(180deg, #181b22, #14171d);color:var(--txt);width:min(680px,calc(100vw - 24px));box-shadow:var(--shadow)}
     dialog::backdrop{background:rgba(0,0,0,.6)}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
+    /* Mapa */
     #mapWrap{width:min(680px,calc(100vw - 24px)); height:60vh}
     #map{width:100%; height:100%; border-radius:12px; border:1px solid var(--line)}
 
@@ -97,69 +152,77 @@
     .input{width:100%;margin-top:4px;padding:12px;border-radius:12px;background:#0f1115;border:1px solid var(--line);color:var(--txt)}
     .block{background:linear-gradient(180deg,#171a20,#14161b);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
 
+    /* ===== Skeletons/Loaders ===== */
     .skeleton{position:relative; overflow:hidden; background:#101319; border:1px solid var(--line); border-radius:16px}
     .skeleton::after{content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent); transform:translateX(-100%); animation:shimmer 1.2s infinite}
     .sk-card{display:grid; grid-template-columns:86px 1fr; gap:10px; height:86px}
     .sk-img{background:#0f1115; border-right:1px solid var(--line)}
     .sk-line{height:12px; background:#0f1115; border-radius:8px; margin:8px 0}
     .sk-line.w40{width:40%} .sk-line.w60{width:60%} .sk-line.w80{width:80%}
+    .topbar-loader{height:3px; background:linear-gradient(90deg,var(--brand),var(--brand-2)); background-size:200% 100%; animation:move 1.2s linear infinite}
+
     @keyframes shimmer{ 100% { transform:translateX(100%)}}
+    @keyframes move{ 0%{background-position:0 0} 100%{background-position:200% 0}}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
+  <!-- BLOQUEIO PARA NÃO-MÓVEIS -->
   <div id="desktopBlocker" aria-hidden="true">
     <div class="box">
       <div style="font-size:42px;line-height:1;margin-bottom:8px">📱</div>
       <h1>Abra no celular</h1>
-      <p>Este aplicativo foi otimizado para dispositivos móveis.</p>
+      <p>Este aplicativo foi otimizado exclusivamente para dispositivos móveis.<br/>Acesse pelo seu smartphone para continuar.</p>
     </div>
   </div>
 
+  <!-- APP -->
   <div id="app">
+    <!-- NAV -->
     <header>
       <div class="wrap">
         <div class="brand" onclick="showPage('menu')">
           <img src="https://images.unsplash.com/photo-1544027993-37dbfe43562a?q=80&w=120&auto=format&fit=crop" alt="logo"/>
-          <div><div class="t1">CLENA FOODS</div><div class="t2">Hamburgueria • Delivery & Retirada</div></div>
+        <div>
+            <div class="t1">CLENA FOODS</div>
+            <div class="t2">Hamburgueria • Delivery & Retirada</div>
+          </div>
         </div>
         <div class="actions">
           <button class="iconbtn" id="btnMap" title="Localização"><i class="fa-solid fa-location-dot"></i></button>
-          <button class="iconbtn" id="btnCart" title="Carrinho"><i class="fa-solid fa-bag-shopping"></i><span class="badge" id="cartBadge">0</span></button>
+          <button class="iconbtn" id="btnCart" title="Carrinho">
+            <i class="fa-solid fa-bag-shopping"></i>
+            <span class="badge" id="cartBadge">0</span>
+          </button>
           <button class="iconbtn" id="btnPerfil" title="Perfil"><i class="fa-solid fa-user"></i></button>
         </div>
       </div>
+
       <div class="topbar">
         <div class="search">
           <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8"></i>
           <input id="search" placeholder="Buscar por nome, descrição ou ingrediente…" />
         </div>
-        <span class="pill"><i class="fa-solid fa-motorcycle"></i>&nbsp; Entrega: Barreiras-BA</span>
+        <span class="pill" id="deliveryArea"><i class="fa-solid fa-motorcycle"></i>&nbsp; Entrega: Barreiras-BA</span>
+        <span class="pill" id="openBadge"><i class="fa-solid fa-clock"></i>&nbsp; Verificando horário…</span>
       </div>
+
       <div id="topbarLoader" class="topbar-loader hidden"></div>
       <div class="cats" id="cats"></div>
     </header>
 
-    <!-- Página: Menu -->
+    <!-- CONTEÚDO -->
     <section class="page" id="page-menu">
       <div class="cards" id="menuGrid"></div>
     </section>
 
-    <!-- Página: Complementos -->
     <section class="page hidden" id="page-complementos">
       <div class="cards" id="compsGrid"></div>
     </section>
 
-    <!-- Página: Checkout -->
     <section class="page hidden" id="page-pedidos">
       <h2>Checkout</h2>
-
-      <!-- Status de funcionamento -->
-      <div id="openBanner" class="block hidden" style="border:1px dashed #3f2f20;background:linear-gradient(180deg,#1b150f,#13100d)">
-        <strong id="openTitle">Funcionamento</strong>
-        <div id="openMsg" style="color:#d6c3a4;margin-top:4px"></div>
-      </div>
-
-      <div class="grid2" style="margin-top:8px">
+      <div class="grid2">
         <label>
           <div>Forma de Entrega</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -170,7 +233,7 @@
         <label>
           <div>Pagamento</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button data-pay="credito" class="btn secondary" onclick="selPay(this)">Crédito</button>
+            <button data-pay="credito" class="btn secondary" onclick="selPay(this)"><i class="fa-solid fa-credit-card"></i> Crédito</button>
             <button data-pay="debito" class="btn secondary" onclick="selPay(this)">Débito</button>
             <button data-pay="dinheiro" class="btn secondary" onclick="selPay(this)">Dinheiro</button>
             <button data-pay="pix" class="btn secondary" onclick="selPay(this)">PIX</button>
@@ -178,38 +241,31 @@
         </label>
       </div>
 
-      <!-- Seleção de endereço -->
-      <div id="addrSelectBox" class="block hidden" style="margin-top:12px">
-        <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
-          <label style="flex:1">
-            <div>Endereço para entrega</div>
-            <select id="addrSelect" class="input"></select>
-          </label>
-          <button class="btn secondary" id="btnNewAddr"><i class="fa-solid fa-plus"></i> Novo endereço</button>
-        </div>
-      </div>
-
-      <!-- Form novo endereço (checkout) -->
+      <!-- Endereço (com seletor + taxa por bairro) -->
       <div id="addrForm" class="block hidden" style="margin-top:12px">
-        <h3 style="margin:0 0 8px">Novo endereço</h3>
+        <h3 style="margin:0 0 8px">Endereço de Entrega</h3>
+
+        <label style="display:block;margin-bottom:8px">
+          <span style="display:block;margin-bottom:6px">Selecione um endereço salvo</span>
+          <select id="addrSelect" class="input" onchange="addrSelectChanged(this)">
+            <option value="">— Escolha —</option>
+          </select>
+        </label>
+
         <div class="grid2">
-          <label>Apelido <input id="f-apelido" class="input" placeholder="Casa, Trabalho…"/></label>
-          <div>
-            <div>CEP</div>
-            <div style="display:flex;gap:8px">
-              <input id="f-cep" placeholder="00000-000" class="input" style="flex:1"/>
-              <button class="btn secondary" id="btnCepCheckout"><i class="fa-solid fa-magnifying-glass-location"></i> Buscar CEP</button>
-            </div>
-          </div>
-          <label>Cidade <input id="f-cidade" placeholder="Cidade" class="input"/></label>
-          <label>Bairro <input id="f-bairro" placeholder="Bairro" class="input"/></label>
+          <label>CEP <input id="f-cep" placeholder="00000-000" class="input"/></label>
+          <label>Cidade <input id="f-cidade" placeholder="Cidade" class="input" value="Barreiras"/></label>
+          <label>Bairro 
+            <input id="f-bairro" placeholder="Bairro" class="input" list="bairrosList"/>
+          </label>
           <label>Rua/Avenida <input id="f-rua" placeholder="Logradouro" class="input"/></label>
           <label>Número <input id="f-num" placeholder="Nº" class="input"/></label>
-          <label class="grid2" style="grid-column:1/-1">Complemento <input id="f-comp" placeholder="Apto/Bloco/Ponto de ref." class="input"/></label>
+          <label>Complemento <input id="f-comp" placeholder="Apto/Bloco/Ponto de ref." class="input"/></label>
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn" id="btnSaveAddr"><i class="fa-solid fa-floppy-disk"></i> Salvar e usar</button>
-          <button class="btn secondary" id="btnCancelAddr"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+
+        <div class="row" style="margin-top:8px">
+          <span>Taxa por bairro</span>
+          <strong id="calcTaxByBairro">—</strong>
         </div>
       </div>
 
@@ -228,24 +284,29 @@
         </div>
       </div>
 
-      <!-- Resumo -->
       <div id="checkoutList" style="margin-top:8px"></div>
-      <div class="row"><span>Entrega</span><strong id="shipTax">—</strong></div>
-      <div class="row" style="border-top:1px dashed #334155"><span>Total</span><strong id="checkoutTotal">R$ 0,00</strong></div>
+      <div class="row"><span>Subtotal</span><strong id="checkoutSub">R$ 0,00</strong></div>
+      <div class="row"><span>Entrega</span><strong id="checkoutShip">—</strong></div>
 
+      <!-- Check-in (aparece na retirada) -->
+      <div id="pickupCheckin" class="block hidden" style="margin-top:12px">
+        <h3 style="margin:0 0 6px"><i class="fa-solid fa-person-walking"></i> Check-in de Retirada</h3>
+        <p style="color:var(--muted);margin:0 0 8px">Ao chegar na loja, faça o check-in para agilizar a entrega do pedido.</p>
+        <button class="btn secondary" onclick="doCheckin()"><i class="fa-solid fa-location-crosshairs"></i> Fazer check-in agora</button>
+        <div id="checkinStatus" style="margin-top:6px;color:var(--muted)"></div>
+      </div>
+
+      <div class="row" style="border-top:1px dashed #334155; padding-top:8px"><span>Total</span><strong id="checkoutTotal">R$ 0,00</strong></div>
       <button class="btn" id="btnFinish" style="margin-top:12px" onclick="finishOrder()" disabled>
         <i class="fa-solid fa-paper-plane"></i> Confirmar Pedido
       </button>
     </section>
 
-    <!-- Página: Perfil -->
     <section class="page hidden" id="page-perfil">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <h2 style="margin:0">Minha Conta</h2>
         <button class="btn secondary" onclick="closePerfil()"><i class="fa-solid fa-xmark"></i> Fechar</button>
       </div>
-
-      <!-- Login -->
       <form id="loginBox" class="block" style="margin-top:12px">
         <h3>Entrar</h3>
         <label>WhatsApp <input id="pwa" class="input" placeholder="(77) 9 0000-0000"/></label>
@@ -254,7 +315,6 @@
         <p style="color:var(--muted);font-size:13px">Não tem cadastro? Role para criar.</p>
       </form>
 
-      <!-- Cadastro (+ endereço padrão opcional) -->
       <form id="signupBox" class="block" style="margin-top:12px">
         <h3>Criar conta</h3>
         <div class="grid2">
@@ -262,31 +322,12 @@
           <label>WhatsApp <input id="s-wa" class="input" placeholder="(77) 9 0000-0000"/></label>
           <label>E-mail <input id="s-mail" class="input"/></label>
           <label>Senha <input id="s-senha" type="password" class="input"/></label>
+          <label>CPF (opcional) <input id="s-cpf" class="input"/></label>
+          <label>Nascimento (opcional) <input id="s-nasc" type="date" class="input"/></label>
         </div>
-
-        <div class="block" style="margin-top:12px">
-          <h4 style="margin:0 0 6px">Endereço (opcional)</h4>
-          <div class="grid2">
-            <label>Apelido <input id="sa-apelido" class="input" placeholder="Casa/Trabalho"/></label>
-            <div>
-              <div>CEP</div>
-              <div style="display:flex;gap:8px">
-                <input id="sa-cep" class="input" placeholder="00000-000" style="flex:1"/>
-                <button class="btn secondary" type="button" id="btnCepSignup"><i class="fa-solid fa-magnifying-glass-location"></i> Buscar CEP</button>
-              </div>
-            </div>
-            <label>Cidade <input id="sa-cidade" class="input"/></label>
-            <label>Bairro <input id="sa-bairro" class="input"/></label>
-            <label>Rua/Avenida <input id="sa-rua" class="input"/></label>
-            <label>Número <input id="sa-num" class="input"/></label>
-            <label class="grid2" style="grid-column:1/-1">Complemento <input id="sa-comp" class="input"/></label>
-          </div>
-        </div>
-
         <button type="button" class="btn" onclick="signup()" id="btnSignup"><i class="fa-solid fa-user-plus"></i> Cadastrar</button>
       </form>
 
-      <!-- Histórico -->
       <div id="profileBox" class="hidden" style="margin-top:16px">
         <div style="display:flex;align-items:center;gap:12px">
           <div style="width:48px;height:48px;border-radius:50%;background:#0f1115;border:1px solid var(--line);display:grid;place-items:center"><i class="fa-solid fa-user"></i></div>
@@ -294,6 +335,32 @@
           <div style="margin-left:auto"><button class="btn secondary" onclick="logout()">Sair</button></div>
         </div>
 
+        <!-- MEUS ENDEREÇOS -->
+        <div class="block" style="margin-top:12px">
+          <h3 style="margin:0 0 8px"><i class="fa-solid fa-location-dot"></i> Meus Endereços</h3>
+          <div id="addrList" style="display:grid;gap:8px"></div>
+
+          <details style="margin-top:8px">
+            <summary style="cursor:pointer">+ Adicionar novo endereço</summary>
+            <div class="grid2" style="margin-top:8px">
+              <label>CEP <input id="a-cep" class="input" placeholder="00000-000"></label>
+              <label>Cidade <input id="a-cidade" class="input" value="Barreiras"></label>
+              <label>Bairro 
+                <input id="a-bairro" class="input" list="bairrosList" placeholder="Selecione/Digite">
+                <datalist id="bairrosList"></datalist>
+              </label>
+              <label>Rua/Avenida <input id="a-rua" class="input"></label>
+              <label>Número <input id="a-num" class="input"></label>
+              <label>Complemento <input id="a-comp" class="input" placeholder="Apto/Bloco/Ponto de ref."></label>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:8px">
+              <button class="btn" onclick="addrSave()"><i class="fa-solid fa-floppy-disk"></i> Salvar endereço</button>
+              <button class="btn secondary" onclick="addrClearForm()">Limpar</button>
+            </div>
+          </details>
+        </div>
+
+        <!-- HISTÓRICO -->
         <div class="block" style="margin-top:12px">
           <h3 style="margin:0 0 8px"><i class="fa-solid fa-clock-rotate-left"></i> Meus Pedidos</h3>
           <div id="ordersList" style="display:grid;gap:8px"></div>
@@ -301,6 +368,7 @@
       </div>
     </section>
 
+    <!-- TAB BAR -->
     <nav class="tabbar">
       <button data-page="menu" class="active"><i class="fa-solid fa-burger"></i><span>Cardápio</span></button>
       <button data-page="complementos"><i class="fa-solid fa-plus"></i><span>Extras</span></button>
@@ -308,8 +376,10 @@
       <button data-page="perfil"><i class="fa-solid fa-user"></i><span>Perfil</span></button>
     </nav>
 
+    <!-- DIALOGS -->
     <dialog id="dlgItem"><div id="itemBox"></div></dialog>
 
+    <!-- DIALOG MAPA -->
     <dialog id="dlgMap">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
         <strong><i class="fa-solid fa-location-dot"></i> Localização & Rota</strong>
@@ -318,22 +388,26 @@
       <div id="mapWrap"><div id="map"></div></div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
         <span class="pill"><i class="fa-solid fa-store"></i> Loja: Rua Pernambuco, 629 — Vila Brasil, Barreiras-BA</span>
-        <span class="pill" id="mapStatus">📍 Toque em “Ver rota”</span>
+        <span class="pill" id="mapStatus">📍 Toque em “Ver rota” para traçar o caminho até a loja</span>
       </div>
       <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn" id="btnUseLoc"><i class="fa-solid fa-person-walking"></i> Ver rota</button>
         <button class="btn secondary" id="btnClearRoute"><i class="fa-solid fa-route"></i> Remover rota</button>
       </div>
     </dialog>
-  </div>
+  </div><!-- /#app -->
 
+  <!-- DRAWER DO CARRINHO -->
   <aside id="cartDrawer" aria-hidden="true">
-    <div class="drawerHead"><button class="iconbtn" onclick="toggleCart(false)"><i class="fa-solid fa-chevron-right"></i></button><strong style="font-size:16px">Meu Carrinho</strong></div>
+    <div class="drawerHead">
+      <button class="iconbtn" onclick="toggleCart(false)"><i class="fa-solid fa-chevron-right"></i></button>
+      <strong style="font-size:16px">Meu Carrinho</strong>
+    </div>
     <div class="drawerBody" id="cartItems"></div>
     <div class="drawerFoot">
-      <div class="row"><span>Subtotal</span><strong id="subTotal">R$ 0,00</strong></div>
-      <div class="row"><span>Entrega</span><strong id="shipTaxDrawer">—</strong></div>
-      <div class="row" style="border-top:1px dashed #334155; padding-top:8px"><span>Total</span><strong id="grandTotal">R$ 0,00</strong></div>
+      <div class="totalLine"><span>Subtotal</span><strong id="subTotal">R$ 0,00</strong></div>
+      <div class="totalLine" style="font-size:14px;opacity:.8"><span>Entrega</span><strong id="shipTax">—</strong></div>
+      <div class="totalLine" style="border-top:1px dashed #334155; padding-top:8px"><span>Total</span><strong id="grandTotal">R$ 0,00</strong></div>
       <div style="display:flex;gap:8px">
         <button class="btn secondary" style="flex:1" onclick="clearCart()"><i class="fa-solid fa-trash"></i> Limpar</button>
         <button class="btn" style="flex:2" onclick="goCheckout()"><i class="fa-solid fa-credit-card"></i> Finalizar</button>
@@ -342,281 +416,406 @@
   </aside>
 
   <script>
+  /* ===== Forçar uso em celular ===== */
   (function enforceMobileOnly(){
-    const isUA=/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isSmall=Math.min(window.innerWidth,window.innerHeight)<768;
-    const allow=isUA&&isSmall;
-    document.getElementById('desktopBlocker').style.display=allow?'none':'flex';
-    const app=document.getElementById('app'); if(app) app.style.display=allow?'':'none';
-    let to=null; const rerun=()=>{clearTimeout(to); to=setTimeout(enforceMobileOnly,150)};
+    const isUA = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isSmall = Math.min(window.innerWidth, window.innerHeight) < 768;
+    const allow = isUA && isSmall;
+    document.getElementById('desktopBlocker').style.display = allow ? 'none' : 'flex';
+    const app = document.getElementById('app');
+    if(app) app.style.display = allow ? '' : 'none';
+    let to=null;
+    const rerun=()=>{clearTimeout(to); to=setTimeout(enforceMobileOnly,150)};
     window.addEventListener('resize',rerun); window.addEventListener('orientationchange',rerun);
   })();
 
-  // ===== CONFIG =====
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyuxfyXM7XgYMa_VPJiBkwM4nHagNjVP6U4pblZh9uxjpDpdVB_-j1bT7Uw9vLeUF4Z/exec'; // <-- troque
+  // ========================== CONFIGURAÇÃO ===============================
+  // SUBSTITUA PELO SEU /exec
+  const API_URL = 'https://script.google.com/macros/s/AKfycby5VPxqhxKEyshIKjRFNGAHFWVHznkhA2MrvIM9SXvZFhNUBZCGxSM0Kbb-GyBR_LbY/exec';
   const PIX_CHAVE = '08338807567';
   const PIX_RECEPTOR = 'CLENA FOODS';
   const PIX_CIDADE = 'BARREIRAS-BA';
-  const STORE_LAT = -12.139814, STORE_LNG = -44.9893035;
+  const STORE_LAT = -12.139814, STORE_LNG = -44.9893035; // Rua Pernambuco, 629 — Vila Brasil
 
-  const $ = s=>document.querySelector(s);
-  const $$ = s=>Array.from(document.querySelectorAll(s));
-  const BRL = v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-  const digitsOnly = s => String(s||'').replace(/\D/g,'');
-  const normalize = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  const store = { get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set(k,v){localStorage.setItem(k,JSON.stringify(v))}, del(k){localStorage.removeItem(k)} };
+  // ====== CONFIG DE TAXAS E HORÁRIOS ======
+  const BAIRROS_TAXAS = {
+    "Vila Brasil": 6.00,
+    "Centro": 7.00,
+    "Sandra Regina": 8.00,
+    "São Pedro": 8.00,
+    "Novo Horizonte": 9.00,
+    "Floresta": 9.50,
+    "Riachinho": 10.00
+  };
+  // Horários por dia (0=Dom ... 6=Sáb). Vazio = fechado.
+  const HORARIOS = {
+    0: ["17:00","23:00"], // Dom
+    1: ["11:00","23:00"], // Seg
+    2: ["11:00","23:00"], // Ter
+    3: ["11:00","23:00"], // Qua
+    4: ["11:00","23:00"], // Qui
+    5: ["11:00","00:00"], // Sex (vira meia-noite)
+    6: ["11:00","00:00"]  // Sáb
+  };
+
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const BRL = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const digitsOnly = s => String(s||'').replace(/\D/g,''); // normaliza WhatsApp
+  const store = {
+    get(k,def){ try{ return JSON.parse(localStorage.getItem(k)) ?? def }catch{ return def } },
+    set(k,v){ localStorage.setItem(k, JSON.stringify(v)) },
+    del(k){ localStorage.removeItem(k) }
+  }
 
   let user = store.get('cf_user', null);
   let token = store.get('cf_token', null);
   let cart = store.get('cf_cart', []);
-  let entrega = 'delivery', payMethod='credito';
-  let savedAddr = null;
-  let menu=[], complements=[];
-  let activeCat=null;
-  let fees = [];               // taxas por bairro
-  let addresses = [];          // endereços do usuário
-  let selectedAddressId=null;  // endereço escolhido
-  let shipFee = 0;
-  let isOpen = true;           // status de funcionamento
-  const pages=['menu','complementos','pedidos','perfil'];
+  let entrega = 'delivery';
+  let payMethod = 'credito';
+  let menu = [];
+  let complements = [];
+  let activeCat = null;
+  const pages = ['menu','complementos','pedidos','perfil'];
 
-  // ===== UI helpers
-  function showTopbarLoader(b){ $('#topbarLoader').classList.toggle('hidden', !b); }
-  function setBtnBusy(btn, busy=true, label='Aguarde…'){
-    if(!btn) return; if(busy){ btn.dataset.prev=btn.innerHTML; btn.classList.add('busy'); btn.innerHTML=`<span class="spin"></span>${label}`; btn.disabled=true; }
-    else{ btn.classList.remove('busy'); btn.innerHTML=btn.dataset.prev||btn.innerHTML; btn.disabled=false; }
+  /* ===== Helpers de UI: Busy, Skeletons ===== */
+  function setBtnBusy(btn, busy=true, label='Aguarde...'){
+    if(!btn) return;
+    if(busy){
+      btn.dataset.prev = btn.innerHTML;
+      btn.classList.add('busy');
+      btn.innerHTML = `<span class="spin"></span>${label}`;
+      btn.disabled = true;
+    }else{
+      btn.classList.remove('busy');
+      btn.innerHTML = btn.dataset.prev || btn.innerHTML;
+      btn.disabled = false;
+    }
   }
-
-  // ===== Navegação
-  $$('.tabbar [data-page]').forEach(btn=>{
-    btn.onclick=()=>{$$('.tabbar button').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); showPage(btn.dataset.page); if(btn.dataset.page!=='perfil') toggleCart(false); };
-  });
-  $('#btnCart').onclick=()=>toggleCart(true);
-  $('#btnPerfil').onclick=()=>{ setActiveTab('perfil'); showPage('perfil'); };
-  $('#btnMap').onclick=openMapDialog;
-  function setActiveTab(p){ $$('.tabbar button').forEach(b=>b.classList.toggle('active', b.dataset.page===p)); }
-  function toggleCart(open){ const dr=$('#cartDrawer'); dr.classList.toggle('open',open); dr.setAttribute('aria-hidden', open?'false':'true'); }
-
-  // ===== Busca
-  let searchTO=null;
-  $('#search').addEventListener('input',()=>{ clearTimeout(searchTO); searchTO=setTimeout(()=>renderMenu(activeCat),120) });
-
-  // ===== API
-  async function api(acao, payload={}){
-    try{
-      showTopbarLoader(true);
-      const res = await fetch(API_URL,{method:'POST', body: JSON.stringify({acao,token,...payload})});
-      const text = await res.text(); let data;
-      try{ data=JSON.parse(text) }catch(e){ throw new Error(`Resposta não-JSON (HTTP ${res.status})`) }
-      if(!res.ok || data.ok===false) throw new Error(data.error||`HTTP ${res.status}`);
-      return data;
-    }catch(e){ alert(`Erro na API (${acao}): ${e.message}`); return {ok:false, error:e.message} }
-    finally{ showTopbarLoader(false) }
-  }
-
-  // ===== Boot
-  (async function init(){
-    menuSkeleton();
-    await Promise.all([loadMenu(), loadComplements(), fetchFees(), fetchOpenStatus()]);
-    if(user){ applyUser(); await Promise.all([fetchOrders(), fetchAddresses()]); }
-    renderCart(); updateAuthUI();
-    setupNotifications();
-
-    // eventos CEP
-    $('#btnCepSignup').onclick = ()=>cepLookup($('#sa-cep').value, {cidade:'#sa-cidade', bairro:'#sa-bairro', rua:'#sa-rua'});
-    $('#btnCepCheckout').onclick = ()=>cepLookup($('#f-cep').value, {cidade:'#f-cidade', bairro:'#f-bairro', rua:'#f-rua'});
-    $('#btnNewAddr').onclick = ()=>{ $('#addrForm').classList.remove('hidden'); };
-    $('#btnCancelAddr').onclick = ()=>{ $('#addrForm').classList.add('hidden'); };
-    $('#btnSaveAddr').onclick = saveNewAddress;
-    $('#addrSelect').onchange = ()=>{ selectedAddressId = $('#addrSelect').value || null; fillAddrFormFromSelect(false); calcShipping(); renderTotals(); };
-  })();
-
-  // ===== Dados iniciais
+  function showTopbarLoader(show){ $('#topbarLoader').classList.toggle('hidden', !show); }
   function menuSkeleton(n=6){
-    const grid=$('#menuGrid'); grid.innerHTML='';
+    const grid = $('#menuGrid'); grid.innerHTML='';
     for(let i=0;i<n;i++){
-      const sk=document.createElement('div'); sk.className='skeleton sk-card';
-      sk.innerHTML=`<div class="sk-img"></div><div style="padding:10px 10px 10px 0"><div class="sk-line w80"></div><div class="sk-line w60"></div><div class="sk-line w40"></div></div>`;
+      const sk = document.createElement('div'); sk.className='skeleton sk-card';
+      sk.innerHTML = `<div class="sk-img"></div>
+                      <div style="padding:10px 10px 10px 0">
+                        <div class="sk-line w80"></div>
+                        <div class="sk-line w60"></div>
+                        <div class="sk-line w40"></div>
+                      </div>`;
       grid.appendChild(sk);
     }
   }
-  async function loadMenu(){ const d=await api('getMenu'); menu=d.ok?d.items:[]; renderCategories(); renderMenu(); }
-  async function loadComplements(){ const d=await api('getComplements'); complements=d.ok?d.items:[]; const grid=$('#compsGrid'); grid.innerHTML=''; (complements.length?complements:[]).forEach(c=>{ const el=document.createElement('div'); el.className='card'; el.innerHTML=`<div class="img skeleton"></div><div class="body"><div class="name">${c.name}</div><div class="desc">${c.tag||''}</div><div class="price">${BRL(c.price||0)}</div></div>`; grid.appendChild(el); }); }
-  async function fetchFees(){ const r=await api('getFees'); fees = r.ok ? r.items : []; }
-  async function fetchOpenStatus(){ const r=await api('getOpenStatus'); isOpen = !!(r.ok && r.open); const banner=$('#openBanner'); const msg=$('#openMsg'); const title=$('#openTitle'); if(r.ok){ if(r.open){ banner.classList.remove('hidden'); title.textContent='Estamos abertos ✅'; msg.textContent = r.message || 'Faça seu pedido normalmente.'; }else{ banner.classList.remove('hidden'); title.textContent='Estamos fechados ⛔'; msg.textContent = r.message || 'Voltamos em breve.'; } } }
-
-  // ===== Categorias / Menu
-  function renderCategories(){ const cats=['Tudo', ...new Set(menu.map(i=>i.cat))]; const box=$('#cats'); box.innerHTML=''; cats.forEach((c,ix)=>{ const chip=document.createElement('button'); chip.className='chip'+(ix===0?' active':''); chip.textContent=c; chip.onclick=()=>{ $$('#cats .chip').forEach(x=>x.classList.remove('active')); chip.classList.add('active'); activeCat=(c==='Tudo'?null:c); renderMenu(activeCat); }; box.appendChild(chip); }); }
-  function renderMenu(cat){ const q=normalize($('#search').value); const grid=$('#menuGrid'); grid.innerHTML=''; (menu||[]).filter(i=>(!cat || i.cat===cat)).filter(i=> (normalize(i.name)+' '+normalize(i.desc||'')+' '+normalize(i.cat)).includes(q)).forEach(i=>grid.appendChild(cardItem(i))); }
-  function cardItem(i){ const el=document.createElement('div'); el.className='card'; el.innerHTML=`<div class="img"><img src="${i.img}" alt="${i.name}" loading="lazy"></div><div class="body"><div class="name">${i.name}</div><div class="desc">${i.desc||''}</div><div style="display:flex;align-items:center;justify-content:space-between"><div class="price">${BRL(i.price)}</div><button class="btn">Adicionar</button></div></div>`; el.querySelector('.btn').onclick=()=>requireLoginThen(()=>openItem(i)); return el; }
-
-  function requireLoginThen(action){ if(!user){ alert('Você precisa estar logado para adicionar itens.'); setActiveTab('perfil'); showPage('perfil'); return; } action(); }
-  function openItem(i){
-    const compHtml=(complements||[]).map(c=>`<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" data-compid="${c.id}" data-compprice="${c.price}"/> ${c.name} <span style="margin-left:auto">${BRL(c.price)}</span></label>`).join('');
-    $('#itemBox').innerHTML=`<div class="grid2" style="gap:16px"><div><img src="${i.img}" alt="${i.name}" style="width:100%;border-radius:12px;border:1px solid var(--line)"/></div><div><h3 style="margin:0">${i.name}</h3><p style="color:var(--muted)">${i.desc||''}</p><div class="pill" style="margin:8px 0">Preço base <strong>${BRL(i.price)}</strong></div><h4>Complementos</h4><div style="display:grid;gap:6px;max-height:180px;overflow:auto;padding-right:6px">${compHtml||'<em style="color:var(--muted)">Nenhum complemento cadastrado</em>'}</div><div style="display:flex;gap:8px;margin-top:10px;align-items:center"><button class="btn" id="addBtn">Adicionar ao carrinho</button><button class="btn secondary" onclick="dlgItem.close()">Cancelar</button></div></div></div>`;
-    $('#addBtn').onclick=()=>{ const chec=Array.from($('#dlgItem').querySelectorAll('input[type=checkbox]:checked')).map(ch=>({id:ch.dataset.compid, name:(complements.find(c=>c.id===ch.dataset.compid)||{}).name||'Extra', price:Number(ch.dataset.compprice)})); addToCart({id:i.id,name:i.name,price:Number(i.price),qty:1,img:i.img,comps:chec}); dlgItem.close(); toggleCart(true); };
-    dlgItem.showModal();
+  function ordersSkeleton(n=3){
+    const box = $('#ordersList'); box.innerHTML='';
+    for(let i=0;i<n;i++){
+      const sk = document.createElement('div'); sk.className='skeleton';
+      sk.style.padding='16px'; sk.style.height='64px';
+      box.appendChild(sk);
+    }
   }
 
-  // ===== Carrinho
-  function addToCart(item){ if(!user){ alert('Faça login para adicionar itens.'); setActiveTab('perfil'); showPage('perfil'); return; } const k=JSON.stringify({id:item.id, comps:item.comps.map(c=>c.id).sort()}); const found=cart.find(x=>JSON.stringify({id:x.id, comps:(x.comps||[]).map(c=>c.id).sort()})===k); if(found){ found.qty++ } else { cart.push(item) } store.set('cf_cart',cart); renderCart(); }
+  // ===== Navegação básica =====
+  $$('.tabbar [data-page]').forEach(btn=>{
+    btn.onclick = ()=>{
+      $$('.tabbar button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      showPage(btn.dataset.page);
+      if(btn.dataset.page!=='perfil') toggleCart(false);
+    };
+  });
+  $('#btnCart').onclick = ()=> toggleCart(true);
+  $('#btnPerfil').onclick = ()=> { setActiveTab('perfil'); showPage('perfil'); };
+  $('#btnMap').onclick = openMapDialog;
+  function setActiveTab(page){ $$('.tabbar button').forEach(b=> b.classList.toggle('active', b.dataset.page===page)); }
+  function toggleCart(open){
+    const dr = $('#cartDrawer');
+    dr.classList.toggle('open', open);
+    dr.setAttribute('aria-hidden', open? 'false':'true');
+  }
+
+  // ===== Busca =====
+  const normalize = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  let searchTO=null;
+  $('#search').addEventListener('input', ()=>{
+    clearTimeout(searchTO);
+    searchTO=setTimeout(()=>{ renderMenu(activeCat); }, 120);
+  });
+
+  // ===== API helper (sem headers p/ evitar preflight) =====
+  async function api(acao, payload = {}) {
+    try {
+      showTopbarLoader(true);
+      const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({ acao, token, ...payload }) });
+      const text = await res.text();
+      let data; try{ data = JSON.parse(text); }catch(e){ throw new Error(`Resposta não-JSON (HTTP ${res.status}). ${text.slice(0,160)}...`); }
+      if(!res.ok || data.ok===false) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    } catch (e) {
+      console.error('API', acao, e);
+      alert(`Erro na API (${acao}): ${e.message}`);
+      return { ok:false, error: e.message };
+    } finally {
+      showTopbarLoader(false);
+    }
+  }
+
+  // ===== Boot =====
+  (async function init(){
+    menuSkeleton(); // mostra skeleton
+    await loadMenu();
+    await loadComplements();
+    if(user) { applyUser(); fetchOrders(); }
+    renderCart();
+    updateAuthUI();
+    setupNotifications();
+    // Endereços + horários
+    addrRenderList();
+    updateOpenBadge();
+    setInterval(updateOpenBadge, 60000);
+
+    // listeners dos campos de endereço (para atualizar taxa)
+    ['f-bairro','f-cep','f-cidade','f-rua','f-num','f-comp'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.addEventListener('input', calcAndRenderTax);
+    });
+  })();
+
+  async function loadMenu(){
+    const data = await api('getMenu');
+    if(data.ok){ menu = data.items; } else {
+      menu = [
+        {id:'x1', name:'Cheeseburger Clena', desc:'Brioche, burger 160g, queijo e molho da casa.', price:27.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550317138-10000687a72b?q=80&w=800&auto=format&fit=crop'},
+        {id:'x2', name:'Smash Duplo', desc:'Dois blends 90g, cheddar, cebola.', price:31.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800&auto=format&fit=crop'},
+        {id:'x5', name:'Clena Bacon', desc:'Burger 160g, cheddar, bacon crocante.', price:33.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=800&auto=format&fit=crop'},
+        {id:'x6', name:'Veggie Green', desc:'Grão-de-bico, salada e maionese verde.', price:29.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550547660-16a0e0a1e5c2?q=80&w=800&auto=format&fit=crop'},
+        {id:'x3', name:'Batata Rústica', desc:'Páprica e alho.', price:15.9, cat:'Acompanhamentos', img:'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800&auto=format&fit=crop'},
+        {id:'x7', name:'Onion Rings', desc:'Anéis de cebola empanados.', price:16.9, cat:'Acompanhamentos', img:'https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?q=80&w=800&auto=format&fit=crop'},
+        {id:'d1', name:'Brownie Clena', desc:'Brownie com calda quente.', price:14.9, cat:'Sobremesas', img:'https://images.unsplash.com/photo-1606313564200-e75d5e30476e?q=80&w=800&auto=format&fit=crop'},
+        {id:'d2', name:'Milkshake Ovomaltine', desc:'300 ml', price:17.9, cat:'Sobremesas', img:'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=800&auto=format&fit=crop'},
+        {id:'b1', name:'Refrigerante Lata', desc:'350 ml', price:6.0, cat:'Bebidas', img:'https://images.unsplash.com/photo-1541976076758-347942db1970?q=80&w=800&auto=format&fit=crop'},
+        {id:'b2', name:'Suco Natural', desc:'Laranja ou limão.', price:9.0, cat:'Bebidas', img:'https://images.unsplash.com/photo-1542442828-287ea90b6b32?q=80&w=800&auto=format&fit=crop'},
+        {id:'p1', name:'Combo Clena', desc:'Burger + Batata + Refri', price:42.9, cat:'Combos', img:'https://images.unsplash.com/photo-1550547660-1c00da094a4b?q=80&w=800&auto=format&fit=crop'},
+        {id:'p2', name:'Combo Família', desc:'2 Burgers + 2 Acomp. + 2 Bebidas', price:89.9, cat:'Combos', img:'https://images.unsplash.com/photo-1550547660-08490b1b65f6?q=80&w=800&auto=format&fit=crop'}
+      ];
+    }
+    renderCategories();
+    renderMenu();
+  }
+
+  async function loadComplements(){
+    const data = await api('getComplements');
+    complements = data.ok ? data.items : [
+      {id:'c1', name:'Bacon', price:4.0, tag:'Adicionais'},
+      {id:'c2', name:'Cheddar extra', price:3.5, tag:'Adicionais'},
+      {id:'c3', name:'Molho Clena', price:2.5, tag:'Molhos'},
+      {id:'c4', name:'Barbecue', price:2.5, tag:'Molhos'},
+    ];
+  }
+
+  function renderCategories(){
+    const cats = ['Tudo', ...new Set(menu.map(i=> i.cat))];
+    const box = $('#cats'); box.innerHTML='';
+    cats.forEach((c,ix)=>{
+      const chip = document.createElement('button'); chip.className='chip'+(ix===0?' active':''); chip.textContent=c;
+      chip.onclick=()=>{ $$('#cats .chip').forEach(x=>x.classList.remove('active')); chip.classList.add('active'); activeCat = (c==='Tudo'? null : c); renderMenu(activeCat) };
+      box.appendChild(chip);
+    });
+  }
+
+  function renderMenu(cat){
+    const q = normalize($('#search').value);
+    const grid = $('#menuGrid'); grid.innerHTML='';
+    menu
+      .filter(i => (!cat || i.cat===cat))
+      .filter(i => {
+        const h = normalize(i.name) + ' ' + normalize(i.desc||'') + ' ' + normalize(i.cat);
+        return h.includes(q);
+      })
+      .forEach(i => grid.appendChild(cardItem(i)));
+  }
+
+  function requireLoginThen(action){
+    if(!user){
+      alert('Você precisa estar logado para adicionar itens.');
+      setActiveTab('perfil'); showPage('perfil');
+      return;
+    }
+    action();
+  }
+
+  function cardItem(i){
+    const el = document.createElement('div'); el.className='card';
+    el.innerHTML = `
+      <div class="img"><img src="${i.img}" alt="${i.name}" loading="lazy"></div>
+      <div class="body">
+        <div class="name">${i.name}</div>
+        <div class="desc">${i.desc||''}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="price">${BRL(i.price)}</div>
+          <button class="btn">Adicionar</button>
+        </div>
+      </div>`;
+    el.querySelector('.btn').onclick = ()=> requireLoginThen(()=> openItem(i));
+    return el;
+  }
+
+  // ===== ITEM =====
+  function openItem(i){
+    const compHtml = complements.map(c=>
+      `<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" data-compid="${c.id}" data-compprice="${c.price}"/> ${c.name} <span style="margin-left:auto">${BRL(c.price)}</span></label>`
+    ).join('');
+    const html = `
+      <div class="grid2" style="gap:16px">
+        <div><img src="${i.img}" alt="${i.name}" style="width:100%;border-radius:12px;border:1px solid var(--line)"/></div>
+        <div>
+          <h3 style="margin:0">${i.name}</h3>
+          <p style="color:var(--muted)">${i.desc||''}</p>
+          <div class="pill" style="margin:8px 0">Preço base <strong>${BRL(i.price)}</strong></div>
+          <h4>Complementos</h4>
+          <div style="display:grid;gap:6px;max-height:180px;overflow:auto;padding-right:6px">${compHtml||'<em style="color:var(--muted)">Nenhum complemento cadastrado</em>'}</div>
+          <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+            <button class="btn" id="addBtn">Adicionar ao carrinho</button>
+            <button class="btn secondary" onclick="dlgItem.close()">Cancelar</button>
+          </div>
+        </div>
+      </div>`;
+    $('#itemBox').innerHTML = html;
+    $('#addBtn').onclick = () => {
+      const chec = Array.from($('#dlgItem').querySelectorAll('input[type=checkbox]:checked'))
+                  .map(ch => ({ id: ch.dataset.compid, name: complements.find(c=>c.id===ch.dataset.compid)?.name || 'Extra', price: Number(ch.dataset.compprice) }));
+      addToCart({ id:i.id, name:i.name, price:i.price, qty:1, img:i.img, comps:chec });
+      dlgItem.close();
+      toggleCart(true);
+    }
+    $('#dlgItem').showModal();
+  }
+
+  // ===== CARRINHO =====
+  function addToCart(item){
+    if(!user){ alert('Faça login para adicionar itens.'); setActiveTab('perfil'); showPage('perfil'); return; }
+    const k = JSON.stringify({id:item.id, comps:item.comps.map(c=>c.id).sort()});
+    const found = cart.find(x => JSON.stringify({id:x.id, comps:x.comps.map(c=>c.id).sort()})===k);
+    if(found){ found.qty += 1 } else { cart.push(item) }
+    store.set('cf_cart', cart); renderCart();
+  }
   function inc(i){ cart[i].qty++; store.set('cf_cart',cart); renderCart() }
-  function dec(i){ cart[i].qty>1?cart[i].qty--:cart.splice(i,1); store.set('cf_cart',cart); renderCart() }
-  function clearCart(){ if(!cart.length) return; if(confirm('Tem certeza que deseja limpar o carrinho?')){ cart=[]; store.set('cf_cart',cart); renderCart(); } }
+  function dec(i){ cart[i].qty>1? cart[i].qty-- : cart.splice(i,1); store.set('cf_cart',cart); renderCart() }
+  function clearCart(){
+    if(!cart.length) return;
+    if(confirm('Tem certeza que deseja limpar o carrinho?')){ cart=[]; store.set('cf_cart',cart); renderCart(); }
+  }
+  function currentShippingTax(){
+    if(entrega!=='delivery') return 0;
+    const bairro = $('#f-bairro')?.value || '';
+    const key = Object.keys(BAIRROS_TAXAS).find(k => k.toLowerCase() === bairro.toLowerCase());
+    const t = key ? Number(BAIRROS_TAXAS[key]) : null;
+    return t==null ? 0 : t;
+  }
   function renderCart(){
-    const count=cart.reduce((a,b)=>a+b.qty,0); $('#cartBadge').textContent=count;
-    const box=$('#cartItems'); box.innerHTML='';
-    if(!cart.length){ box.innerHTML='<div class="empty">Seu carrinho está vazio.</div>'; }
-    else{
+    const count = cart.reduce((a,b)=>a+b.qty,0);
+    $('#cartBadge').textContent = count;
+    const box = $('#cartItems'); box.innerHTML='';
+    if(!cart.length){
+      box.innerHTML = `<div class="empty">Seu carrinho está vazio.</div>`;
+    }else{
       cart.forEach((it,ix)=>{
-        const extras=it.comps?.length? `<div style="color:var(--muted);font-size:12px">+ ${it.comps.map(c=>c.name).join(', ')}</div>`:'';
-        const total=(it.price+(it.comps||[]).reduce((a,b)=>a+Number(b.price||0),0))*it.qty;
-        const row=document.createElement('div'); row.className='row';
-        row.innerHTML=`<div style="max-width:58%"><div style="font-weight:600">${it.name}</div>${extras}</div><div class="qty"><button onclick="dec(${ix})">-</button><span>${it.qty}</span><button onclick="inc(${ix})">+</button><strong style="width:86px;text-align:right">${BRL(total)}</strong></div>`;
+        const extras = it.comps?.length? `<div style="color:var(--muted);font-size:12px">+ ${it.comps.map(c=>c.name).join(', ')}</div>` : '';
+        const totalItem = (it.price + (it.comps||[]).reduce((a,b)=>a+b.price,0)) * it.qty;
+        const row = document.createElement('div'); row.className='row';
+        row.innerHTML = `
+          <div style="max-width:58%">
+            <div style="font-weight:600">${it.name}</div>
+            ${extras}
+          </div>
+          <div class="qty">
+            <button onclick="dec(${ix})">-</button><span>${it.qty}</span><button onclick="inc(${ix})">+</button>
+            <strong style="width:86px;text-align:right">${BRL(totalItem)}</strong>
+          </div>`;
         box.appendChild(row);
       });
     }
-    const sub = cart.reduce((a,it)=>a+(it.price+(it.comps||[]).reduce((x,y)=>x+Number(y.price||0),0))*it.qty,0);
-    $('#subTotal').textContent=BRL(sub);
-    calcShipping();
-    renderTotals();
+    const sub = cart.reduce((a,it)=> a + (it.price + (it.comps||[]).reduce((x,y)=>x+y.price,0)) * it.qty, 0);
+    const shipT = currentShippingTax();
+    $('#subTotal').textContent = BRL(sub);
+    $('#shipTax').textContent = entrega==='delivery' ? (shipT ? BRL(shipT) : 'A calcular') : BRL(0);
+    $('#grandTotal').textContent = BRL(sub + (entrega==='delivery' ? shipT : 0));
+    renderCheckout();
   }
-  function goCheckout(){ setActiveTab('pedidos'); showPage('pedidos'); toggleCart(false); window.scrollTo({top:0,behavior:'smooth'}); if(user) fetchAddresses(); }
+  function goCheckout(){ setActiveTab('pedidos'); showPage('pedidos'); toggleCart(false); window.scrollTo({top:0,behavior:'smooth'}) }
 
-  // ===== Entrega / Pagamento
+  // ===== Entrega x Retirada =====
   function setEntrega(btnOrMode){
-    const mode=typeof btnOrMode==='string'?btnOrMode:btnOrMode.dataset.entrega; entrega=mode;
-    $$('#page-pedidos [data-entrega]').forEach(b=>b.classList.remove('active'));
-    const match=$$('#page-pedidos [data-entrega]').find(b=>b.dataset.entrega===mode); if(match) match.classList.add('active');
-    $('#addrSelectBox').classList.toggle('hidden', entrega!=='delivery');
-    $('#addrForm').classList.add('hidden'); // esconde o formulário até pedir novo
+    const mode = typeof btnOrMode === 'string' ? btnOrMode : btnOrMode.dataset.entrega;
+    entrega = mode;
+    $$('#page-pedidos [data-entrega]').forEach(b=> b.classList.remove('active'));
+    const match = $$('#page-pedidos [data-entrega]').find(b=> b.dataset.entrega===mode);
+    if(match) match.classList.add('active');
+    const addr = $('#addrForm');
+    addr.classList.toggle('hidden', entrega!=='delivery');
+
+    // mostra/oculta check-in
+    $('#pickupCheckin')?.classList.toggle('hidden', entrega!=='pickup');
+
+    if(entrega==='delivery'){
+      // Prefere endereço padrão salvo
+      const items = addrLoad();
+      const def = items.find(x=>x.default) || items[0];
+      if(def){ addrFillForm(def); }
+      calcAndRenderTax();
+    }
     renderCart();
   }
-  function selPay(btn){ $$('#page-pedidos [data-pay]').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); payMethod=btn.dataset.pay; $('#pixBox').classList.toggle('hidden', payMethod!=='pix'); if(payMethod==='pix') createPix(); }
+  function selPay(btn){
+    $$('#page-pedidos [data-pay]').forEach(b=> b.classList.remove('active'));
+    btn.classList.add('active'); 
+    payMethod = btn.dataset.pay; 
+    $('#pixBox').classList.toggle('hidden', payMethod!=='pix'); 
+    if(payMethod==='pix') createPix();
+  }
   function renderCheckout(){
-    const box=$('#checkoutList'); box.innerHTML=''; let total=0;
-    cart.forEach(it=>{ const extras=it.comps?.length?` (+${it.comps.map(c=>c.name).join(', ')})`:''; const t=(it.price+(it.comps||[]).reduce((a,b)=>a+Number(b.price||0),0))*it.qty; total+=t; const row=document.createElement('div'); row.className='row'; row.innerHTML=`<span>${it.qty}× ${it.name}${extras}</span><strong>${BRL(t)}</strong>`; box.appendChild(row); });
-  }
-  function renderTotals(){
-    renderCheckout();
-    $('#shipTax').textContent = entrega==='delivery' ? (shipFee>0?BRL(shipFee): (selectedAddressId?'R$ 0,00':'— selecione')) : 'R$ 0,00';
-    $('#shipTaxDrawer').textContent = $('#shipTax').textContent;
-    const sub = cart.reduce((a,it)=>a+(it.price+(it.comps||[]).reduce((x,y)=>x+Number(y.price||0),0))*it.qty,0);
-    const total = sub + (entrega==='delivery' ? Number(shipFee||0) : 0);
-    $('#grandTotal').textContent = BRL(total);
-    $('#checkoutTotal').textContent = BRL(total);
-  }
-
-  // ===== Endereços
-  async function fetchAddresses(){
-    const r = await api('listAddresses');
-    if(r.ok){ addresses=r.items||[]; fillAddressSelect(); }
-  }
-  function fillAddressSelect(){
-    const sel=$('#addrSelect'); sel.innerHTML='';
-    if(!addresses.length){ sel.innerHTML='<option value="">Nenhum endereço salvo</option>'; selectedAddressId=null; $('#addrForm').classList.remove('hidden'); }
-    else{
-      addresses.forEach(a=>{ const opt=document.createElement('option'); opt.value=a.id; opt.textContent=(a.apelido? a.apelido+' — ' : '') + `${a.rua}, ${a.num} • ${a.bairro}`; sel.appendChild(opt); });
-      if(!selectedAddressId) selectedAddressId = addresses[0].id;
-      sel.value = selectedAddressId;
-      fillAddrFormFromSelect(false);
-    }
-    calcShipping(); renderTotals();
-  }
-  function fillAddrFormFromSelect(showForm){
-    const a = addresses.find(x=>x.id===selectedAddressId);
-    if(!a) return;
-    if(showForm) $('#addrForm').classList.remove('hidden');
-    $('#f-apelido').value=a.apelido||'';
-    $('#f-cep').value=a.cep||'';
-    $('#f-cidade').value=a.cidade||'';
-    $('#f-bairro').value=a.bairro||'';
-    $('#f-rua').value=a.rua||'';
-    $('#f-num').value=a.num||'';
-    $('#f-comp').value=a.comp||'';
-  }
-  async function saveNewAddress(){
-    if(!user) return alert('Faça login.');
-    const req=[['f-cep','CEP'],['f-cidade','Cidade'],['f-bairro','Bairro'],['f-rua','Rua'],['f-num','Número']];
-    for(const [id,label] of req){ if(!$('#'+id).value.trim()) return alert('Preencha: '+label); }
-    const addr={ apelido:$('#f-apelido').value.trim(), cep:$('#f-cep').value.trim(), cidade:$('#f-cidade').value.trim(), bairro:$('#f-bairro').value.trim(), rua:$('#f-rua').value.trim(), num:$('#f-num').value.trim(), comp:$('#f-comp').value.trim() };
-    const btn=$('#btnSaveAddr'); setBtnBusy(btn,true,'Salvando…');
-    const r = await api('addAddress',{addr});
-    setBtnBusy(btn,false);
-    if(r.ok){ $('#addrForm').classList.add('hidden'); await fetchAddresses(); selectedAddressId=r.addr.id; fillAddressSelect(); calcShipping(); renderTotals(); }
-    else alert('Erro ao salvar endereço: '+(r.error||''));
+    const box = $('#checkoutList'); if(!box) return;
+    box.innerHTML=''; let subtotal = 0;
+    cart.forEach(it=>{
+      const extras = it.comps?.length? ` (+${it.comps.map(c=>c.name).join(', ')})` : '';
+      const t = (it.price + (it.comps||[]).reduce((a,b)=>a+b.price,0)) * it.qty; subtotal += t;
+      const row = document.createElement('div'); row.className='row';
+      row.innerHTML = `<span>${it.qty}× ${it.name}${extras}</span><strong>${BRL(t)}</strong>`;
+      box.appendChild(row);
+    });
+    const shipT = currentShippingTax();
+    $('#checkoutSub').textContent = BRL(subtotal);
+    $('#checkoutShip').textContent = entrega==='delivery' ? (shipT ? BRL(shipT) : 'A calcular') : BRL(0);
+    $('#checkoutTotal').textContent = BRL(subtotal + (entrega==='delivery' ? shipT : 0));
+    if(payMethod==='pix') createPix();
   }
 
-  // ViaCEP
-  async function cepLookup(cep, map){
-    cep = digitsOnly(cep);
-    if(cep.length!==8){ alert('CEP inválido'); return; }
-    try{
-      const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-      const j = await r.json();
-      if(j.erro){ alert('CEP não encontrado'); return; }
-      if(map.cidade) $(map.cidade).value = `${j.localidade||''}-${j.uf||''}`;
-      if(map.bairro) $(map.bairro).value = j.bairro||'';
-      if(map.rua)    $(map.rua).value    = j.logradouro||'';
-    }catch{ alert('Falha ao consultar CEP'); }
-  }
+  // ===== Login =====
+  function updateAuthUI(){ $('#btnFinish').disabled = !user; }
 
-  // ===== Frete
-  function calcShipping(){
-    shipFee = 0;
-    if(entrega!=='delivery') return;
-    const addr = addresses.find(x=>x.id===selectedAddressId);
-    if(!addr){ $('#shipTax').textContent='— selecione'; $('#shipTaxDrawer').textContent='— selecione'; return; }
-    const bnorm = normalize(addr.bairro);
-    const match = fees.find(f=>normalize(f.bairro)===bnorm || normalize(f.bairro).includes(bnorm) || bnorm.includes(normalize(f.bairro)));
-    shipFee = match ? Number(match.taxa||0) : 0;
-  }
-
-  // ===== Login / Cadastro
-  function updateAuthUI(){ $('#btnFinish').disabled = !user || !isOpen; }
-  function applyUser(){ $('#loginBox').classList.add('hidden'); $('#signupBox').classList.add('hidden'); $('#profileBox').classList.remove('hidden'); $('#uNome').textContent=user?.nome||'Cliente'; $('#uWa').textContent=user?.whatsapp||''; updateAuthUI(); }
-
-  async function login(){
-    const btn=$('#btnLogin'); setBtnBusy(btn,true,'Entrando…');
-    const whatsapp=digitsOnly($('#pwa').value); const senha=$('#ppw').value.trim();
-    const r=await api('login',{whatsapp,senha,ua:navigator.userAgent});
-    setBtnBusy(btn,false);
-    if(r.ok){ user=r.user; token=r.token; store.set('cf_user',user); store.set('cf_token',token); applyUser(); fetchOrders(); fetchAddresses(); startPolling(); alert('Bem-vindo!'); }
-    else alert('Falha no login: '+(r.error||''));
-  }
-
-  async function signup(){
-    const btn=$('#btnSignup'); setBtnBusy(btn,true,'Cadastrando…');
-    const payload={ nome:$('#s-nome').value.trim(), whatsapp:digitsOnly($('#s-wa').value), email:$('#s-mail').value.trim(), senha:$('#s-senha').value.trim(),
-      address:{ apelido:$('#sa-apelido').value.trim(), cep:$('#sa-cep').value.trim(), cidade:$('#sa-cidade').value.trim(), bairro:$('#sa-bairro').value.trim(), rua:$('#sa-rua').value.trim(), num:$('#sa-num').value.trim(), comp:$('#sa-comp').value.trim() } };
-    const r=await api('signup',payload);
-    setBtnBusy(btn,false);
-    if(r.ok){ alert('Cadastro realizado! Faça o login.'); setActiveTab('perfil'); showPage('perfil'); }
-    else alert('Erro no cadastro: '+(r.error||''));
-  }
-  function logout(){ user=null; token=null; store.del('cf_user'); store.del('cf_token'); location.reload(); }
-
-  // ===== Pedido
   async function finishOrder(){
-    if(!user){ setActiveTab('perfil'); showPage('perfil'); alert('Você precisa estar logado.'); return }
-    if(!isOpen){ alert('Estamos fechados agora.'); return }
-    if(!cart.length){ alert('Seu carrinho está vazio.'); return; }
-
-    let endereco=null, endereco_id=null;
+    if(!user){ setActiveTab('perfil'); showPage('perfil'); alert('Você precisa estar logado para finalizar o pedido.'); return }
+    if(!cart.length) return alert('Seu carrinho está vazio.');
+    let endereco = null;
     if(entrega==='delivery'){
-      if(selectedAddressId){ endereco_id=selectedAddressId; endereco = addresses.find(x=>x.id===selectedAddressId)||null; }
-      else{
-        const req=[['f-cep','CEP'],['f-cidade','Cidade'],['f-bairro','Bairro'],['f-rua','Rua/Avenida'],['f-num','Número']];
-        for(const [id,label] of req){ if(!$('#'+id).value.trim()) return alert('Preencha: '+label); }
-        endereco={ apelido:$('#f-apelido').value, cep:$('#f-cep').value, cidade:$('#f-cidade').value, bairro:$('#f-bairro').value, rua:$('#f-rua').value, num:$('#f-num').value, comp:$('#f-comp').value };
-      }
+      const required = [['f-cep','CEP'],['f-cidade','Cidade'],['f-bairro','Bairro'],['f-rua','Rua/Avenida'],['f-num','Número']];
+      for(const [id,label] of required){ if(!$('#'+id).value.trim()) return alert('Preencha: '+label); }
+      endereco = { cep:$('#f-cep').value, cidade:$('#f-cidade').value, bairro:$('#f-bairro').value, rua:$('#f-rua').value, num:$('#f-num').value, comp:$('#f-comp').value };
+      // salva/atualiza último endereço rápido (opcional)
+      const items = addrLoad();
+      if(items.length===0) { items.push({...endereco, default:true}); addrSaveLocal(items); addrRenderList(); }
     }
-
-    const order={ entrega, pay:payMethod, endereco, endereco_id, ship_fee:shipFee,
-      items:cart, total: cart.reduce((a,it)=> a+(it.price+(it.comps||[]).reduce((x,y)=>x+Number(y.price||0),0))*it.qty,0) + (entrega==='delivery'?Number(shipFee||0):0) };
-
-    const btn=$('#btnFinish'); setBtnBusy(btn,true,'Enviando…');
-    const r=await api('createOrder',{order});
+    const subtotal = cart.reduce((a,it)=> a + (it.price + (it.comps||[]).reduce((x,y)=>x+y.price,0)) * it.qty, 0);
+    const shipT = currentShippingTax();
+    const order = { 
+      entrega, 
+      pay: payMethod, 
+      endereco, 
+      items: cart, 
+      taxa_entrega: entrega==='delivery' ? shipT : 0,
+      total: subtotal + (entrega==='delivery'? shipT : 0)
+    };
+    const btn = $('#btnFinish'); setBtnBusy(btn,true,'Enviando…');
+    const r = await api('createOrder', {order});
     setBtnBusy(btn,false);
     if(!r.ok) return;
     cart=[]; store.set('cf_cart',cart); renderCart();
@@ -624,61 +823,408 @@
     setActiveTab('perfil'); showPage('perfil'); fetchOrders();
   }
 
-  // ===== Pedidos do usuário
+  function applyUser(){
+    $('#loginBox').classList.add('hidden');
+    $('#signupBox').classList.add('hidden');
+    $('#profileBox').classList.remove('hidden');
+    $('#uNome').textContent = user?.nome || 'Cliente';
+    $('#uWa').textContent = user?.whatsapp || '';
+    updateAuthUI();
+  }
+
+  async function login(){
+    const btn = $('#btnLogin'); setBtnBusy(btn,true,'Entrando…');
+    const whatsapp = digitsOnly($('#pwa').value);
+    const senha = $('#ppw').value.trim();
+    const r = await api('login', {whatsapp, senha, ua: navigator.userAgent});
+    setBtnBusy(btn,false);
+    if(r.ok){ 
+      user=r.user; token=r.token; 
+      store.set('cf_user',user); store.set('cf_token',token); 
+      applyUser(); alert('Bem-vindo!'); 
+      fetchOrders(); startPolling();
+    } else {
+      alert('Falha no login: '+(r.error||'')); 
+    }
+  }
+
+  async function signup(){
+    const btn = $('#btnSignup'); setBtnBusy(btn,true,'Cadastrando…');
+    const payload = { 
+      nome:$('#s-nome').value.trim(),
+      whatsapp: digitsOnly($('#s-wa').value),
+      email:$('#s-mail').value.trim(),
+      senha:$('#s-senha').value.trim(),
+      cpf:$('#s-cpf').value.trim(),
+      nasc:$('#s-nasc').value
+    };
+    const r = await api('signup', payload);
+    setBtnBusy(btn,false);
+    if(r.ok){ alert('Cadastro realizado! Faça o login.'); setActiveTab('perfil'); showPage('perfil'); } 
+    else { alert('Erro no cadastro: '+(r.error||'')) }
+  }
+
+  function logout(){ user=null; token=null; store.del('cf_user'); store.del('cf_token'); location.reload() }
+
+  // ===== HISTÓRICO =====
   async function fetchOrders(){
     if(!user) return;
-    const box=$('#ordersList'); box.innerHTML=''; for(let i=0;i<3;i++){ const sk=document.createElement('div'); sk.className='skeleton'; sk.style.height='56px'; sk.style.margin='6px 0'; box.appendChild(sk); }
-    const r=await api('listOrders'); box.innerHTML='';
+    ordersSkeleton();
+    const r = await api('listOrders');
+    const box = $('#ordersList'); box.innerHTML='';
     if(r.ok && r.items?.length){
-      r.items.forEach(o=>{ const li=document.createElement('div'); li.className='block';
-        li.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
-          <div><strong>Pedido #${o.id}</strong><div style="color:var(--muted);font-size:12px">${new Date(o.created_at).toLocaleString()}</div></div>
-          <span class="pill">Pagamento: <strong>${o.status_pagamento||'Pendente'}</strong></span>
-          <span class="pill">Andamento: <strong>${o.status_pedido||'Recebido'}</strong></span>
-          <span class="pill">Total: <strong>${BRL(o.total||0)}</strong></span></div>`;
-        box.appendChild(li); });
-    } else { box.innerHTML='<div class="empty">Você ainda não possui pedidos.</div>'; }
+      r.items.forEach(o=>{
+        const li = document.createElement('div'); li.className='block';
+        li.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+            <div><strong>Pedido #${o.id}</strong><div style="color:var(--muted);font-size:12px">${new Date(o.created_at).toLocaleString()}</div></div>
+            <span class="pill">Pagamento: <strong>${o.status_pagamento||'Pendente'}</strong></span>
+            <span class="pill">Andamento: <strong>${o.status_pedido||'Recebido'}</strong></span>
+            <span class="pill">Total: <strong>${BRL(o.total||0)}</strong></span>
+          </div>`;
+        box.appendChild(li);
+      });
+    } else {
+      box.innerHTML = `<div class="empty">Você ainda não possui pedidos.</div>`;
+    }
   }
 
-  function showPage(id){ pages.forEach(p=> document.getElementById('page-'+p)?.classList.toggle('hidden', p!==id)); window.scrollTo(0,0); }
+  // ===== NAVEGAÇÃO =====
+  function showPage(id){ pages.forEach(p=> $('#page-'+p)?.classList.toggle('hidden', p!==id)); window.scrollTo(0,0); }
   function closePerfil(){ setActiveTab('menu'); showPage('menu'); }
 
-  // ===== Mapa
+  // ===== MAPA & ROTA =====
   let map, storeMarker, userMarker, routing, mapReady=false;
   function openMapDialog(){
-    dlgMap.showModal();
+    const dlg = $('#dlgMap');
+    dlg.showModal();
     setTimeout(()=>{ 
       if(!mapReady){
-        map=L.map('map',{zoomControl:false}).setView([STORE_LAT,STORE_LNG],16);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
-        storeMarker=L.marker([STORE_LAT,STORE_LNG]).addTo(map).bindPopup('Clena Foods — Rua Pernambuco, 629');
+        map = L.map('map', {zoomControl:false}).setView([STORE_LAT, STORE_LNG], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(map);
+        storeMarker = L.marker([STORE_LAT, STORE_LNG]).addTo(map).bindPopup('Clena Foods — Rua Pernambuco, 629');
         mapReady=true;
-      }else{ map.invalidateSize(); map.setView([STORE_LAT,STORE_LNG],16); }
-      $('#mapStatus').textContent='📍 Loja fixa — Rua Pernambuco, 629';
-    },50);
+      } else {
+        map.invalidateSize();
+        map.setView([STORE_LAT, STORE_LNG], 16);
+      }
+      $('#mapStatus').textContent = '📍 Loja fixa — Rua Pernambuco, 629';
+    }, 50);
   }
-  $('#btnUseLoc').onclick=()=>{ if(!navigator.geolocation){ $('#mapStatus').textContent='ℹ️ Geolocalização indisponível'; return }
-    $('#mapStatus').textContent='⏳ Solicitando sua localização…';
-    navigator.geolocation.getCurrentPosition((pos)=>{ const {latitude,longitude}=pos.coords; if(userMarker) userMarker.remove(); userMarker=L.marker([latitude,longitude]).addTo(map).bindPopup('Você'); map.setView([latitude,longitude],14); $('#mapStatus').textContent='✅ Localização ativa • Rota traçada'; if(routing) routing.remove(); routing=L.Routing.control({waypoints:[L.latLng(latitude,longitude),L.latLng(STORE_LAT,STORE_LNG)],fitSelectedRoutes:true,addWaypoints:false,collapsible:true,show:false,routeWhileDragging:false}).addTo(map); }, ()=> $('#mapStatus').textContent='⚠️ Permissão negada'); };
-  $('#btnClearRoute').onclick=()=>{ if(routing){routing.remove(); routing=null} if(userMarker){userMarker.remove(); userMarker=null} map.setView([STORE_LAT,STORE_LNG],16); $('#mapStatus').textContent='📍 Loja fixa • Rota removida'; };
+  $('#btnUseLoc').onclick = ()=>{
+    if(!navigator.geolocation){ $('#mapStatus').textContent = 'ℹ️ Geolocalização indisponível'; return }
+    const btn = $('#btnUseLoc'); setBtnBusy(btn,true,'Localizando…');
+    $('#mapStatus').textContent = '⏳ Solicitando sua localização…';
+    navigator.geolocation.getCurrentPosition((pos)=>{
+      const {latitude, longitude} = pos.coords;
+      if(userMarker) userMarker.remove();
+      userMarker = L.marker([latitude, longitude]).addTo(map).bindPopup('Você');
+      map.setView([latitude, longitude], 14);
+      $('#mapStatus').textContent = '✅ Localização ativa • Rota traçada';
+      if(routing){ routing.remove(); }
+      routing = L.Routing.control({
+        waypoints: [ L.latLng(latitude, longitude), L.latLng(STORE_LAT, STORE_LNG) ],
+        fitSelectedRoutes: true,
+        addWaypoints: false,
+        collapsible: true,
+        show: false,
+        routeWhileDragging: false
+      }).addTo(map);
+      setBtnBusy(btn,false,'Ver rota');
+    }, ()=>{
+      $('#mapStatus').textContent = '⚠️ Permissão negada';
+      setBtnBusy(btn,false,'Ver rota');
+    });
+  };
+  $('#btnClearRoute').onclick = ()=>{
+    if(routing){ routing.remove(); routing=null; }
+    if(userMarker){ userMarker.remove(); userMarker=null; }
+    map.setView([STORE_LAT, STORE_LNG], 16);
+    $('#mapStatus').textContent = '📍 Loja fixa • Rota removida';
+  };
 
-  // ===== PIX
-  function emv(id,val){const len=String(val.length).padStart(2,'0'); return id+len+val}
-  function pixPayload({nome,cidade,chave,valor,txid='CF'+Date.now().toString().slice(-8)}){
-    const method=emv('00','BR.GOV.BCB.PIX')+(chave?emv('01',chave):''); const mer=emv('26',method); const cat=emv('52','0000'); const curr=emv('53','986');
-    const amount=valor?emv('54',String(Number(valor).toFixed(2))):''; const ctry=emv('58','BR'); const city=emv('60',(cidade||'BRASILIA').substring(0,15).toUpperCase());
-    const name=emv('59',(nome||'RECEBEDOR').substring(0,25).toUpperCase()); const add=emv('62',emv('05',txid.substring(0,25)));
-    let body=emv('00','01')+emv('01','12')+mer+cat+curr+amount+ctry+name+city+add+'6304'; const crc=crc16(body).toUpperCase(); return body+crc;
+  // ===== PIX =====
+  function emv(field, value){ const len = String(value.length).padStart(2,'0'); return field + len + value }
+  function pixPayload({nome, cidade, chave, valor, txid='CF' + Date.now().toString().slice(-8)}){
+    const method = emv('00','BR.GOV.BCB.PIX') + (chave? emv('01', chave):'');
+    const mer = emv('26', method); const cat = emv('52','0000'); const curr = emv('53','986');
+    const amount = valor? emv('54', String(valor.toFixed(2))) : ''; const ctry = emv('58','BR');
+    const city = emv('60', (cidade||'BRASILIA').substring(0,15).toUpperCase());
+    const name = emv('59', (nome||'RECEBEDOR').substring(0,25).toUpperCase());
+    const add = emv('62', emv('05', txid.substring(0,25)));
+    let body = emv('00','01') + emv('01','12') + mer + cat + curr + amount + ctry + name + city + add + '6304';
+    const crc = crc16(body).toUpperCase(); return body + crc;
   }
-  function crc16(str){let crc=0xFFFF; for(let i=0;i<str.length;i++){crc^=str.charCodeAt(i)<<8; for(let j=0;j<8;j++) crc=(crc&0x8000)?(crc<<1)^0x1021:(crc<<1); crc&=0xFFFF;} return crc.toString(16).padStart(4,'0');}
-  function createPix(){ const total=cart.reduce((a,it)=> a+(it.price+(it.comps||[]).reduce((x,y)=>x+Number(y.price||0),0))*it.qty,0)+(entrega==='delivery'?Number(shipFee||0):0); const payload=pixPayload({nome:PIX_RECEPTOR,cidade:PIX_CIDADE,chave:PIX_CHAVE,valor:total}); const ta=$('#pixCop'); if(ta) ta.value=payload; const cv=$('#pixQr'); if(cv) new QRious({element:cv,value:payload,size:160}); }
-  function copyPix(){ const ta=$('#pixCop'); ta.select(); document.execCommand('copy'); alert('Código PIX copiado!'); }
+  function crc16(str){
+    let crc = 0xFFFF;
+    for(let i=0;i<str.length;i++){
+      crc ^= str.charCodeAt(i) << 8;
+      for(let j=0;j<8;j++) crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+      crc &= 0xFFFF;
+    }
+    return crc.toString(16).padStart(4,'0');
+  }
+  function createPix(){
+    const subtotal = cart.reduce((a,it)=> a + (it.price + (it.comps||[]).reduce((x,y)=>x+y.price,0)) * it.qty, 0);
+    const total = subtotal + (entrega==='delivery' ? currentShippingTax() : 0);
+    const payload = pixPayload({nome: PIX_RECEPTOR, cidade: PIX_CIDADE, chave: PIX_CHAVE, valor: total});
+    const ta = $('#pixCop'); if(ta) ta.value = payload;
+    const cv = $('#pixQr'); if(cv) new QRious({element: cv, value: payload, size: 160});
+  }
+  function copyPix(){ const ta = $('#pixCop'); ta.select(); document.execCommand('copy'); alert('Código PIX copiado!'); }
 
-  // ===== Notificações
-  let notifSince=Number(store.get('cf_notif_since', Date.now()-3600*1000)), pollTimer=null;
-  function setupNotifications(){ if('Notification' in window && Notification.permission==='default'){ setTimeout(()=>Notification.requestPermission().catch(()=>{}),800); } startPolling(); }
-  function startPolling(){ if(pollTimer) clearTimeout(pollTimer); const loop=async()=>{ try{ if(!user){pollTimer=setTimeout(loop,10000); return} const r=await api('pollNotifications',{since:notifSince}); if(r.ok&&Array.isArray(r.items)){ r.items.forEach(showNotification); const maxTs=r.items.reduce((m,it)=>Math.max(m, it.created_at||0), notifSince); if(maxTs>notifSince){ notifSince=maxTs; store.set('cf_notif_since',notifSince); } } }catch{} pollTimer=setTimeout(loop,10000)}; loop(); }
-  function showNotification(n){ const title=n.title||'Atualização do pedido'; const body=n.message||''; if('Notification' in window && Notification.permission==='granted'){ const note=new Notification(title,{body}); note.onclick=()=>{window.focus(); setActiveTab('perfil'); showPage('perfil');}; } else { alert(`${title}\n\n${body}`); } if(n.order_id) fetchOrders(); }
+  // ===== Notificações (cliente) =====
+  let notifSince = Number(store.get('cf_notif_since', Date.now()-3600*1000));
+  let pollTimer = null;
+  function setupNotifications(){
+    if('Notification' in window && Notification.permission==='default'){
+      setTimeout(()=> Notification.requestPermission().catch(()=>{}), 800);
+    }
+    startPolling();
+  }
+  function startPolling(){
+    if(pollTimer) clearTimeout(pollTimer);
+    const loop = async ()=>{
+      try{
+        if(!user){ pollTimer = setTimeout(loop, 10000); return; }
+        const r = await api('pollNotifications', { since: notifSince });
+        if(r.ok && Array.isArray(r.items)){
+          r.items.forEach(showNotification);
+          const maxTs = r.items.reduce((m,it)=> Math.max(m, it.created_at||0), notifSince);
+          if(maxTs>notifSince){ notifSince = maxTs; store.set('cf_notif_since', notifSince); }
+        }
+      }catch(e){/* noop */}
+      pollTimer = setTimeout(loop, 10000);
+    }; loop();
+  }
+  function showNotification(n){
+    const title = n.title || 'Atualização do pedido';
+    const body  = n.message || '';
+    if('Notification' in window && Notification.permission==='granted'){
+      const note = new Notification(title, { body });
+      note.onclick = ()=> { window.focus(); setActiveTab('perfil'); showPage('perfil'); };
+    }else{
+      alert(`${title}\n\n${body}`);
+    }
+    if(n.order_id) fetchOrders();
+  }
+
+  // ======== ENDEREÇOS ========
+  const ADDR_KEY='cf_addrs';
+  function addrLoad(){ return store.get(ADDR_KEY, []); }
+  function addrSaveLocal(arr){ store.set(ADDR_KEY, arr); }
+  function addrRenderList(){
+    // datalist de bairros
+    const dl = document.getElementById('bairrosList');
+    if(dl){ dl.innerHTML = Object.keys(BAIRROS_TAXAS).map(b=>`<option value="${b}">`).join(''); }
+
+    const list = $('#addrList');
+    const sel  = $('#addrSelect');
+    const items = addrLoad();
+
+    if(list){
+      list.innerHTML = items.length? '' : '<div class="empty">Nenhum endereço salvo.</div>';
+      items.forEach((a,ix)=>{
+        const row = document.createElement('div'); row.className='row';
+        row.innerHTML = `
+          <div style="max-width:70%">
+            <div style="font-weight:600">${a.rua}, ${a.num} — ${a.bairro}</div>
+            <div style="color:var(--muted);font-size:12px">${a.cidade} • CEP ${a.cep||'-'} ${a.comp? '• '+a.comp : ''}</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn secondary" onclick="addrSetDefault(${ix})" title="Definir como padrão">${a.default? 'Padrão' : 'Tornar padrão'}</button>
+            <button class="btn secondary" onclick="addrEdit(${ix})"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn secondary" onclick="addrDelete(${ix})"><i class="fa-solid fa-trash"></i></button>
+          </div>`;
+        list.appendChild(row);
+      });
+    }
+    if(sel){
+      sel.innerHTML = '<option value="">— Escolha —</option>' +
+        items.map((a,ix)=>`<option value="${ix}" ${a.default?'selected':''}>${a.bairro} — ${a.rua}, ${a.num}</option>`).join('');
+      const def = items.find(x=>x.default);
+      if(def) addrFillForm(def);
+      calcAndRenderTax();
+    }
+  }
+  function addrFillForm(a){
+    if(!a) return;
+    $('#f-cep').value=a.cep||'';
+    $('#f-cidade').value=a.cidade||'';
+    $('#f-bairro').value=a.bairro||'';
+    $('#f-rua').value=a.rua||'';
+    $('#f-num').value=a.num||'';
+    $('#f-comp').value=a.comp||'';
+  }
+  function addrSelectChanged(sel){
+    const ix = sel.value;
+    const items = addrLoad();
+    const a = items[ix]; if(a) addrFillForm(a);
+    calcAndRenderTax();
+  }
+  function addrFormToObj(prefix='a-'){
+    return {
+      cep: $('#'+prefix+'cep')?.value||'',
+      cidade: $('#'+prefix+'cidade')?.value||'',
+      bairro: $('#'+prefix+'bairro')?.value||'',
+      rua: $('#'+prefix+'rua')?.value||'',
+      num: $('#'+prefix+'num')?.value||'',
+      comp: $('#'+prefix+'comp')?.value||'',
+    };
+  }
+  function addrSave(){
+    const a = addrFormToObj('a-');
+    if(!a.cidade || !a.bairro || !a.rua || !a.num){
+      alert('Preencha cidade, bairro, rua e número.'); return;
+    }
+    const items = addrLoad(); items.push({...a, default: items.length===0});
+    addrSaveLocal(items); addrClearForm(); addrRenderList();
+    api('saveAddress', {address:a}).catch(()=>{});
+  }
+  function addrClearForm(){
+    ['a-cep','a-cidade','a-bairro','a-rua','a-num','a-comp'].forEach(id=>{ const el=$('#'+id); if(el) el.value=''; });
+  }
+  function addrSetDefault(ix){
+    const items=addrLoad(); items.forEach((a,i)=>a.default=(i===ix)); addrSaveLocal(items); addrRenderList();
+  }
+  function addrEdit(ix){
+    const items=addrLoad(); const a=items[ix]; if(!a) return;
+    $('#a-cep').value=a.cep||'';
+    $('#a-cidade').value=a.cidade||'';
+    $('#a-bairro').value=a.bairro||'';
+    $('#a-rua').value=a.rua||'';
+    $('#a-num').value=a.num||'';
+    $('#a-comp').value=a.comp||'';
+    const oldSave=addrSave;
+    window.addrSave=function(){
+      const upd=addrFormToObj('a-'); if(!upd.cidade||!upd.bairro||!upd.rua||!upd.num) return alert('Campos obrigatórios faltando.');
+      items[ix]={...items[ix], ...upd}; addrSaveLocal(items); window.addrSave=oldSave; addrClearForm(); addrRenderList();
+      api('saveAddress', {address:items[ix]}).catch(()=>{});
+    }
+  }
+  function addrDelete(ix){
+    const items=addrLoad(); items.splice(ix,1); addrSaveLocal(items); addrRenderList();
+    api('deleteAddress', {index:ix}).catch(()=>{});
+  }
+
+  // ====== TAXA POR BAIRRO ======
+  function calcTax(bairro){
+    if(!bairro) return null;
+    const key = Object.keys(BAIRROS_TAXAS).find(k => k.toLowerCase() === String(bairro).toLowerCase());
+    return key ? Number(BAIRROS_TAXAS[key]) : null;
+  }
+  function calcAndRenderTax(){
+    const el = $('#calcTaxByBairro');
+    const bairro = $('#f-bairro')?.value || '';
+    const t = calcTax(bairro);
+    if(el) el.textContent = t==null ? '—' : BRL(t);
+    // atualiza totais
+    renderCart();
+    renderCheckout();
+  }
+
+  // ====== HORÁRIOS (aberto/fechado) ======
+  function parseHm(hm){ const [h,m]=hm.split(':').map(Number); return h*60+m; }
+  function nowMinutes(){ const d=new Date(); return d.getHours()*60 + d.getMinutes(); }
+  function isOpenNow(){
+    const d=new Date(); const dow=d.getDay();
+    const cfg=HORARIOS[dow]||[];
+    if(cfg.length!==2) return false;
+    const [ini,end]=cfg.map(parseHm);
+    const n=nowMinutes();
+    if(end<=ini){ // fecha após meia-noite
+      return (n>=ini || n<end);
+    }
+    return (n>=ini && n<end);
+  }
+  function humanTodayHours(){
+    const d=new Date(); const cfg=HORARIOS[d.getDay()]||[];
+    if(cfg.length!==2) return 'fechado';
+    return cfg[0]+'–'+cfg[1];
+  }
+  function updateOpenBadge(){
+    const el = $('#openBadge'); if(!el) return;
+    const ok = isOpenNow();
+    el.innerHTML = (ok? '🟢 Aberto' : '🔴 Fechado') + ' • hoje ' + humanTodayHours();
+  }
+
+  // ===== NAVEGAÇÃO AUX =====
+  function showPage(id){ pages.forEach(p=> $('#page-'+p)?.classList.toggle('hidden', p!==id)); window.scrollTo(0,0); }
+  function closePerfil(){ setActiveTab('menu'); showPage('menu'); }
+
+  // ===== MAPA & ROTA =====
+  let map, storeMarker, userMarker, routing, mapReady=false;
+  function openMapDialog(){
+    const dlg = $('#dlgMap');
+    dlg.showModal();
+    setTimeout(()=>{ 
+      if(!mapReady){
+        map = L.map('map', {zoomControl:false}).setView([STORE_LAT, STORE_LNG], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(map);
+        storeMarker = L.marker([STORE_LAT, STORE_LNG]).addTo(map).bindPopup('Clena Foods — Rua Pernambuco, 629');
+        mapReady=true;
+      } else {
+        map.invalidateSize();
+        map.setView([STORE_LAT, STORE_LNG], 16);
+      }
+      $('#mapStatus').textContent = '📍 Loja fixa — Rua Pernambuco, 629';
+    }, 50);
+  }
+  $('#btnUseLoc').onclick = ()=>{
+    if(!navigator.geolocation){ $('#mapStatus').textContent = 'ℹ️ Geolocalização indisponível'; return }
+    const btn = $('#btnUseLoc'); setBtnBusy(btn,true,'Localizando…');
+    $('#mapStatus').textContent = '⏳ Solicitando sua localização…';
+    navigator.geolocation.getCurrentPosition((pos)=>{
+      const {latitude, longitude} = pos.coords;
+      if(userMarker) userMarker.remove();
+      userMarker = L.marker([latitude, longitude]).addTo(map).bindPopup('Você');
+      map.setView([latitude, longitude], 14);
+      $('#mapStatus').textContent = '✅ Localização ativa • Rota traçada';
+      if(routing){ routing.remove(); }
+      routing = L.Routing.control({
+        waypoints: [ L.latLng(latitude, longitude), L.latLng(STORE_LAT, STORE_LNG) ],
+        fitSelectedRoutes: true,
+        addWaypoints: false,
+        collapsible: true,
+        show: false,
+        routeWhileDragging: false
+      }).addTo(map);
+      setBtnBusy(btn,false,'Ver rota');
+    }, ()=>{
+      $('#mapStatus').textContent = '⚠️ Permissão negada';
+      setBtnBusy(btn,false,'Ver rota');
+    });
+  };
+  $('#btnClearRoute').onclick = ()=>{
+    if(routing){ routing.remove(); routing=null; }
+    if(userMarker){ userMarker.remove(); userMarker=null; }
+    map.setView([STORE_LAT, STORE_LNG], 16);
+    $('#mapStatus').textContent = '📍 Loja fixa • Rota removida';
+  };
+
+  // ===== CHECK-IN RETIRADA =====
+  function haversineKM(lat1,lon1,lat2,lon2){
+    const toRad=v=>v*Math.PI/180, R=6371;
+    const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
+    const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+    return 2*R*Math.asin(Math.sqrt(a));
+  }
+  async function doCheckin(){
+    const el = $('#checkinStatus');
+    if(!navigator.geolocation){ el.textContent='ℹ️ Geolocalização indisponível'; return; }
+    el.textContent='⏳ Obtendo localização…';
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const {latitude, longitude} = pos.coords;
+      const dist = haversineKM(latitude, longitude, STORE_LAT, STORE_LNG) * 1000; // m
+      if(dist <= 200){
+        el.textContent='✅ Check-in confirmado! Você está na loja.';
+        try{ await api('checkinPickup', { lat:latitude, lng:longitude, when: Date.now() }); }catch{}
+        store.set('cf_checkin', {lat:latitude,lng:longitude,ts:Date.now()});
+      }else{
+        el.textContent='⚠️ Você está a ~' + Math.round(dist) + 'm da loja. Aproxime-se para confirmar.';
+      }
+    }, ()=>{ el.textContent='❌ Não foi possível obter sua localização.'; });
+  }
   </script>
 </body>
 </html>
