@@ -5,7 +5,7 @@
   <!-- SOMENTE CELULAR + ZOOM BLOQUEADO -->
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Clena Foods • Cardápio & Pedidos</title>
-  <meta name="description" content="Catálogo de produtos, complementos e pedidos com login por WhatsApp + senha e pagamento PIX (QR Code)." />
+  <meta name="description" content="Catálogo de produtos, complementos e pedidos com login por WhatsApp + senha, PIX e notificações." />
 
   <!-- Ícones e fontes -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
@@ -66,6 +66,7 @@
       width:38px; height:38px; border-radius:12px;
       background:linear-gradient(180deg,#1a1f27,#14181f);
       border:1px solid var(--line); color:var(--txt);
+      cursor:pointer;
     }
     .badge{
       position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 5px;
@@ -90,7 +91,7 @@
     .chip.active{outline:2px solid #2f3542}
 
     /* ===== GRID DE PRODUTOS ===== */
-    .page{padding:8px 14px 64px} /* espaço pro tabbar */
+    .page{padding:8px 14px 64px}
     .cards{display:grid; grid-template-columns:1fr; gap:12px}
     .card{
       display:grid; grid-template-columns:86px 1fr; gap:10px;
@@ -104,7 +105,7 @@
     .name{font-weight:800; font-size:14px}
     .desc{color:var(--muted); font-size:12px; line-height:1.25; margin:3px 0 6px}
     .price{font-weight:800;color:#fcd34d}
-    .btn{appearance:none;border:0;padding:10px 12px;border-radius:12px;background:linear-gradient(180deg, #f97316, #ea580c);color:white;font-weight:800}
+    .btn{appearance:none;border:0;padding:10px 12px;border-radius:12px;background:linear-gradient(180deg, #f97316, #ea580c);color:white;font-weight:800; cursor:pointer}
     .btn.secondary{background:linear-gradient(180deg, #2b3240, #1c222c)}
     .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
 
@@ -118,7 +119,7 @@
     .tabbar button{
       flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
       padding:8px 4px; border-radius:12px; border:1px solid var(--line);
-      background:linear-gradient(180deg,#1a1f27,#14181f); color:var(--txt); font-size:11px; font-weight:600
+      background:linear-gradient(180deg,#1a1f27,#14181f); color:var(--txt); font-size:11px; font-weight:600; cursor:pointer
     }
     .tabbar button.active{outline:2px solid #2f3542}
 
@@ -135,7 +136,7 @@
     .drawerFoot{padding:12px; border-top:1px solid var(--line); display:grid; gap:10px}
     .row{display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px dashed #283141}
     .qty{display:flex;align-items:center;gap:8px}
-    .qty button{width:28px;height:28px;border-radius:10px;background:#0f1115;border:1px solid var(--line);color:var(--txt)}
+    .qty button{width:28px;height:28px;border-radius:10px;background:#0f1115;border:1px solid var(--line);color:var(--txt); cursor:pointer}
     .totalLine{display:flex; justify-content:space-between; font-size:16px; font-weight:800}
     .empty{color:var(--muted); text-align:center; padding:14px}
 
@@ -171,7 +172,7 @@
       <div class="wrap">
         <div class="brand" onclick="showPage('menu')">
           <img src="https://images.unsplash.com/photo-1544027993-37dbfe43562a?q=80&w=120&auto=format&fit=crop" alt="logo"/>
-        <div>
+          <div>
             <div class="t1">CLENA FOODS</div>
             <div class="t2">Hamburgueria • Delivery & Retirada</div>
           </div>
@@ -191,7 +192,7 @@
           <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8"></i>
           <input id="search" placeholder="Buscar por nome, descrição ou ingrediente…" />
         </div>
-        <span class="pill" id="deliveryArea"><i class="fa-solid fa-motorcycle"></i>&nbsp; Entrega: consulte CEP</span>
+        <span class="pill" id="deliveryArea"><i class="fa-solid fa-motorcycle"></i>&nbsp; Entrega: Barreiras-BA</span>
       </div>
 
       <div class="cats" id="cats"></div>
@@ -349,7 +350,7 @@
   </aside>
 
   <script>
-  /* ===== Enforce mobile only ===== */
+  /* ===== Forçar uso em celular ===== */
   (function enforceMobileOnly(){
     const isUA = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const isSmall = Math.min(window.innerWidth, window.innerHeight) < 768;
@@ -363,13 +364,13 @@
   })();
 
   // ========================== CONFIGURAÇÃO ===============================
-  // COLE AQUI a URL /exec do seu WebApp (Implantar > Aplicativo da Web)
-  const API_URL = 'https://script.google.com/macros/s/AKfycbxmmjR123V6u39J-J1qDMTMhjqCKoPVnX5EaQQqqxcLQHNVmwhqikguzYh7KVKhBhcW/exec';
-  const PIX_CHAVE = '08338807567'; // sua chave PIX (telefone/aleatória/email/cpf/cnpj)
+  // TROQUE PELO SEU /exec AO PUBLICAR
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzDq-e2qb5x7cIcASOmaCB_N6JoX85y4F-6CErNU7DEjNKLNrVrPCrj_a61dEbSfZKu/exec';
+  const PIX_CHAVE = '08338807567';
   const PIX_RECEPTOR = 'CLENA FOODS';
   const PIX_CIDADE = 'BARREIRAS-BA';
 
-  // ===== COORDENADAS DA LOJA (fixas — Rua Pernambuco, 629, Vila Brasil, Barreiras-BA) =====
+  // ===== COORDENADAS DA LOJA (fixas): Rua Pernambuco, 629 — Vila Brasil, Barreiras-BA =====
   const STORE_LAT = -12.139814, STORE_LNG = -44.9893035;
   // ======================================================================
 
@@ -381,11 +382,10 @@
     set(k,v){ localStorage.setItem(k, JSON.stringify(v)) },
     del(k){ localStorage.removeItem(k) }
   }
-  const onlyDigits = s => (s||'').replace(/\D/g,'');
 
   let user = store.get('cf_user', null);
   let token = store.get('cf_token', null);
-  let savedAddr = store.get('cf_addr', null); // endereço salvo localmente
+  let savedAddr = store.get('cf_addr', null);
   let cart = store.get('cf_cart', []);
   let entrega = 'delivery';
   let payMethod = 'credito';
@@ -420,7 +420,7 @@
     dr.setAttribute('aria-hidden', open? 'false':'true');
   }
 
-  // ===== Busca (funcional, sem acento, com debounce) =====
+  // ===== Busca (sem acento, com debounce) =====
   const normalize = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   let searchTO=null;
   $('#search').addEventListener('input', e=>{
@@ -428,24 +428,23 @@
     searchTO=setTimeout(()=>{ renderMenu(activeCat); }, 120);
   });
 
-  // API helper (com diagnóstico de erros não-JSON)
-  async function api(acao, payload={}){
-    try{
+  // ===== API helper (simple request sem preflight) =====
+  async function api(acao, payload = {}) {
+    try {
       const res = await fetch(API_URL, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({acao, token, ...payload})
+        method: 'POST',
+        body: JSON.stringify({ acao, token, ...payload }) // sem headers → evita preflight
       });
       const text = await res.text();
       let data;
       try { data = JSON.parse(text); }
-      catch(e){ throw new Error(`Resposta não-JSON (HTTP ${res.status}). Conteúdo inicial: ${text.slice(0,180)}...`); }
+      catch (e) { throw new Error(`Resposta não-JSON (HTTP ${res.status}). Início: ${text.slice(0,160)}...`); }
       if (!res.ok || data.ok === false) throw new Error(data.error || `HTTP ${res.status}`);
       return data;
-    }catch(e){
+    } catch (e) {
       console.error('API', acao, e);
       alert(`Erro na API (${acao}): ${e.message}`);
-      return {ok:false, error:e.message};
+      return { ok:false, error: e.message };
     }
   }
 
@@ -456,12 +455,13 @@
     if(user) { applyUser(); fetchOrders(); }
     renderCart();
     updateAuthUI();
+    setupNotifications(); // pedir permissão e iniciar polling
   })();
 
   async function loadMenu(){
     const data = await api('getMenu');
     if(data.ok){ menu = data.items; } else {
-      // Fallback local
+      // Fallback local (se API falhar)
       menu = [
         {id:'x1', name:'Cheeseburger Clena', desc:'Brioche, burger 160g, queijo e molho da casa.', price:27.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550317138-10000687a72b?q=80&w=800&auto=format&fit=crop'},
         {id:'x2', name:'Smash Duplo', desc:'Dois blends 90g, cheddar, cebola.', price:31.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800&auto=format&fit=crop'},
@@ -513,7 +513,6 @@
       .forEach(i => grid.appendChild(cardItem(i)));
   }
 
-  // Gating: exige login antes de adicionar
   function requireLoginThen(action){
     if(!user){
       alert('Você precisa estar logado para adicionar itens.');
@@ -572,7 +571,10 @@
 
   // CARRINHO
   function addToCart(item){
-    if(!user){ alert('Faça login para adicionar itens.'); setActiveTab('perfil'); showPage('perfil'); return; }
+    if(!user){
+      alert('Faça login para adicionar itens.');
+      setActiveTab('perfil'); showPage('perfil'); return;
+    }
     const k = JSON.stringify({id:item.id, comps:item.comps.map(c=>c.id).sort()});
     const found = cart.find(x => JSON.stringify({id:x.id, comps:x.comps.map(c=>c.id).sort()})===k);
     if(found){ found.qty += 1 } else { cart.push(item) }
@@ -618,18 +620,15 @@
 
   function goCheckout(){ setActiveTab('pedidos'); showPage('pedidos'); toggleCart(false); window.scrollTo({top:0,behavior:'smooth'}) }
 
-  // ===== Entrega x Retirada (UI e regras) =====
+  // ===== Entrega x Retirada =====
   function setEntrega(btnOrMode){
     const mode = typeof btnOrMode === 'string' ? btnOrMode : btnOrMode.dataset.entrega;
     entrega = mode;
-    // UI botões
     $$('#page-pedidos [data-entrega]').forEach(b=> b.classList.remove('active'));
     const match = $$('#page-pedidos [data-entrega]').find(b=> b.dataset.entrega===mode);
     if(match) match.classList.add('active');
-    // Mostrar/ocultar formulário de endereço
     const addr = document.getElementById('addrForm');
     addr.classList.toggle('hidden', entrega!=='delivery');
-    // Preencher endereço salvo/cadastro
     if(entrega==='delivery'){
       const src = (user && user.endereco) ? user.endereco : savedAddr;
       if(src){
@@ -664,26 +663,19 @@
     if(payMethod==='pix') createPix();
   }
 
-  // ===== Login gating =====
-  function updateAuthUI(){
-    $('#btnFinish').disabled = !user;
-  }
+  // ===== Login/UI =====
+  function updateAuthUI(){ $('#btnFinish').disabled = !user; }
 
-  // ===== Finalizar pedido (exige login e endereço quando delivery) =====
   async function finishOrder(){
     if(!user){ setActiveTab('perfil'); showPage('perfil'); alert('Você precisa estar logado para finalizar o pedido.'); return }
     if(!cart.length) return alert('Seu carrinho está vazio.');
-    // Validar endereço quando for entrega
     let endereco = null;
     if(entrega==='delivery'){
       const required = [['f-cep','CEP'],['f-cidade','Cidade'],['f-bairro','Bairro'],['f-rua','Rua/Avenida'],['f-num','Número']];
-      for(const [id,label] of required){
-        if(!$('#'+id).value.trim()) return alert('Preencha: '+label);
-      }
+      for(const [id,label] of required){ if(!$('#'+id).value.trim()) return alert('Preencha: '+label); }
       endereco = { cep:$('#f-cep').value, cidade:$('#f-cidade').value, bairro:$('#f-bairro').value, rua:$('#f-rua').value, num:$('#f-num').value, comp:$('#f-comp').value };
-      store.set('cf_addr', endereco); // salvar local
+      store.set('cf_addr', endereco);
     }
-
     const order = {
       entrega, pay: payMethod,
       endereco,
@@ -691,45 +683,12 @@
       total: cart.reduce((a,it)=> a + (it.price + (it.comps||[]).reduce((x,y)=>x+y.price,0)) * it.qty, 0)
     };
     const r = await api('createOrder', {order});
-    if(!r.ok) return alert('Erro ao enviar pedido: '+(r.error||''));
+    if(!r.ok) return;
     cart=[]; store.set('cf_cart',cart); renderCart();
     alert('Pedido enviado! Código: '+r.id);
     setActiveTab('perfil'); showPage('perfil'); fetchOrders();
   }
 
-  // PIX
-  function emv(field, value){ const len = String(value.length).padStart(2,'0'); return field + len + value }
-  function pixPayload({nome, cidade, chave, valor, txid='CF' + Date.now().toString().slice(-8)}){
-    const method = emv('00','BR.GOV.BCB.PIX') + (chave? emv('01', chave):'');
-    const mer = emv('26', method); const cat = emv('52','0000'); const curr = emv('53','986');
-    const amount = valor? emv('54', String(valor.toFixed(2))) : ''; const ctry = emv('58','BR');
-    const city = emv('60', (cidade||'BRASILIA').substring(0,15).toUpperCase());
-    const name = emv('59', (nome||'RECEBEDOR').substring(0,25).toUpperCase());
-    const add = emv('62', emv('05', txid.substring(0,25)));
-    let body = emv('00','01') + emv('01','12') + mer + cat + curr + amount + ctry + name + city + add + '6304';
-    const crc = crc16(body).toUpperCase(); return body + crc;
-  }
-  function crc16(str){
-    let crc = 0xFFFF;
-    for(let i=0;i<str.length;i++){
-      crc ^= str.charCodeAt(i) << 8;
-      for(let j=0;j<8;j++) crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
-      crc &= 0xFFFF;
-    }
-    return crc.toString(16).padStart(4,'0');
-  }
-  function createPix(){
-    const total = cart.reduce((a,it)=> a + (it.price + (it.comps||[]).reduce((x,y)=>x+y.price,0)) * it.qty, 0);
-    const payload = pixPayload({nome: PIX_RECEPTOR, cidade: PIX_CIDADE, chave: PIX_CHAVE, valor: total});
-    const ta = document.getElementById('pixCop'); if(ta) ta.value = payload;
-    const cv = document.getElementById('pixQr'); if(cv) new QRious({element: cv, value: payload, size: 160});
-  }
-  function copyPix(){
-    const ta = document.getElementById('pixCop'); ta.select(); document.execCommand('copy');
-    alert('Código PIX copiado!');
-  }
-
-  // AUTH
   function applyUser(){
     $('#loginBox').classList.add('hidden');
     $('#signupBox').classList.add('hidden');
@@ -739,32 +698,24 @@
     updateAuthUI();
   }
   async function login(){
-    const whatsapp = onlyDigits($('#pwa').value);
+    const whatsapp = $('#pwa').value.trim();
     const senha = $('#ppw').value.trim();
-    const r = await api('login', {whatsapp, senha});
+    const r = await api('login', {whatsapp, senha, ua: navigator.userAgent});
     if(r.ok){ 
       user=r.user; token=r.token; 
       store.set('cf_user',user); store.set('cf_token',token); 
       applyUser(); alert('Bem-vindo!'); 
-      fetchOrders();
+      fetchOrders(); startPolling(); // ativa polling após login
     } else {
       alert('Falha no login: '+(r.error||''));
     }
   }
   async function signup(){
-    const payload = { 
-      nome:$('#s-nome').value.trim(),
-      whatsapp:onlyDigits($('#s-wa').value),
-      email:$('#s-mail').value.trim(),
-      senha:$('#s-senha').value.trim(),
-      cpf:onlyDigits($('#s-cpf').value),
-      nasc:$('#s-nasc').value
-    };
+    const payload = { nome:$('#s-nome').value.trim(), whatsapp:$('#s-wa').value.trim(), email:$('#s-mail').value.trim(), senha:$('#s-senha').value.trim(), cpf:$('#s-cpf').value.trim(), nasc:$('#s-nasc').value }
     const r = await api('signup', payload);
-    if(r.ok){ alert('Cadastro realizado! Faça o login.'); setActiveTab('perfil'); showPage('perfil'); } 
-    else alert('Erro no cadastro: '+(r.error||''))
+    if(r.ok){ alert('Cadastro realizado! Faça o login.'); setActiveTab('perfil'); showPage('perfil'); } else alert('Erro no cadastro: '+(r.error||''))
   }
-  function logout(){ user=null; token=null; store.del('cf_user'); store.del('cf_token'); updateAuthUI(); location.reload() }
+  function logout(){ user=null; token=null; store.del('cf_user'); store.del('cf_token'); location.reload() }
 
   // HISTÓRICO DO CLIENTE
   async function fetchOrders(){
@@ -795,12 +746,12 @@
   }
   function closePerfil(){ setActiveTab('menu'); showPage('menu'); }
 
-  // ===== MAPA & ROTA (loja fixa, cliente opcional) =====
+  // ===== MAPA & ROTA =====
   let map, storeMarker, userMarker, routing, mapReady=false;
   function openMapDialog(){
     const dlg = document.getElementById('dlgMap');
     dlg.showModal();
-    setTimeout(()=>{ // garante layout pronto
+    setTimeout(()=>{ 
       if(!mapReady){
         map = L.map('map', {zoomControl:false}).setView([STORE_LAT, STORE_LNG], 16);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(map);
@@ -842,6 +793,84 @@
     map.setView([STORE_LAT, STORE_LNG], 16);
     document.getElementById('mapStatus').textContent = '📍 Loja fixa • Rota removida';
   };
+
+  // ===== PIX =====
+  function emv(field, value){ const len = String(value.length).padStart(2,'0'); return field + len + value }
+  function pixPayload({nome, cidade, chave, valor, txid='CF' + Date.now().toString().slice(-8)}){
+    const method = emv('00','BR.GOV.BCB.PIX') + (chave? emv('01', chave):'');
+    const mer = emv('26', method); const cat = emv('52','0000'); const curr = emv('53','986');
+    const amount = valor? emv('54', String(valor.toFixed(2))) : ''; const ctry = emv('58','BR');
+    const city = emv('60', (cidade||'BRASILIA').substring(0,15).toUpperCase());
+    const name = emv('59', (nome||'RECEBEDOR').substring(0,25).toUpperCase());
+    const add = emv('62', emv('05', txid.substring(0,25)));
+    let body = emv('00','01') + emv('01','12') + mer + cat + curr + amount + ctry + name + city + add + '6304';
+    const crc = crc16(body).toUpperCase(); return body + crc;
+  }
+  function crc16(str){
+    let crc = 0xFFFF;
+    for(let i=0;i<str.length;i++){
+      crc ^= str.charCodeAt(i) << 8;
+      for(let j=0;j<8;j++) crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+      crc &= 0xFFFF;
+    }
+    return crc.toString(16).padStart(4,'0');
+  }
+  function createPix(){
+    const total = cart.reduce((a,it)=> a + (it.price + (it.comps||[]).reduce((x,y)=>x+y.price,0)) * it.qty, 0);
+    const payload = pixPayload({nome: PIX_RECEPTOR, cidade: PIX_CIDADE, chave: PIX_CHAVE, valor: total});
+    const ta = document.getElementById('pixCop'); if(ta) ta.value = payload;
+    const cv = document.getElementById('pixQr'); if(cv) new QRious({element: cv, value: payload, size: 160});
+  }
+  function copyPix(){
+    const ta = document.getElementById('pixCop'); ta.select(); document.execCommand('copy');
+    alert('Código PIX copiado!');
+  }
+
+  // ===== Notificações (cliente) =====
+  let notifSince = Number(store.get('cf_notif_since', Date.now()-3600*1000)); // última 1h
+  let pollTimer = null;
+
+  function setupNotifications(){
+    if('Notification' in window){
+      if(Notification.permission==='default'){
+        // pede permissão sutilmente
+        setTimeout(()=> Notification.requestPermission().catch(()=>{}), 800);
+      }
+    }
+    startPolling();
+  }
+  function startPolling(){
+    if(pollTimer) clearTimeout(pollTimer);
+    const loop = async ()=>{
+      try{
+        if(!user){ pollTimer = setTimeout(loop, 10000); return; }
+        const r = await api('pollNotifications', { since: notifSince });
+        if(r.ok && Array.isArray(r.items)){
+          r.items.forEach(showNotification);
+          const maxTs = r.items.reduce((m,it)=> Math.max(m, it.created_at||0), notifSince);
+          if(maxTs>notifSince){ notifSince = maxTs; store.set('cf_notif_since', notifSince); }
+        }
+      }catch(e){ /* silencioso */ }
+      pollTimer = setTimeout(loop, 10000);
+    };
+    loop();
+  }
+  function showNotification(n){
+    const title = n.title || 'Atualização do pedido';
+    const body  = n.message || '';
+    if('Notification' in window && Notification.permission==='granted'){
+      const note = new Notification(title, { body });
+      note.onclick = ()=> { window.focus(); setActiveTab('perfil'); showPage('perfil'); };
+    }else{
+      // fallback simples
+      alert(`${title}\n\n${body}`);
+    }
+    // Se for sobre pedido, recarrega a lista
+    if(n.order_id) fetchOrders();
+  }
+
+  // ===== Helpers UI =====
+  function closePerfil(){ setActiveTab('menu'); showPage('menu'); }
   </script>
 </body>
 </html>
