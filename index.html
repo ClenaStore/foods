@@ -437,39 +437,35 @@
   const PIX_CIDADE = 'BARREIRAS-BA';
   const STORE_LAT = -12.139814, STORE_LNG = -44.9893035; // Rua Pernambuco, 629 — Vila Brasil
 
-  // ====== CONFIG DE TAXAS E HORÁRIOS ======
-let BAIRROS_TAXAS = {};
-let HORARIOS = {};
-
 // ====== CONFIG DE TAXAS E HORÁRIOS ======
 let BAIRROS_TAXAS = {};
 let HORARIOS = {};
 
 async function bootFeesHours(){
-  // --- Taxas por bairro ---
-  const fees = await api('getFees');
-  if(fees.ok){
-    BAIRROS_TAXAS = Object.fromEntries(fees.items.map(f => [f.bairro, Number(f.taxa||0)]));
-    const dl = document.getElementById('bairrosList');
-    if(dl) dl.innerHTML = Object.keys(BAIRROS_TAXAS).map(b => `<option value="${b}">`).join('');
-  }
-
-  // --- Horários de funcionamento ---
-  const open = await api('getOpenStatus');
-  const badge = $('#openBadge');
-  if(open.ok){
-    if(open.open){
-      badge.innerHTML = `🟢 Aberto • ${open.message}`;
-      badge.style.color = 'var(--ok)';
-    }else{
-      badge.innerHTML = `🔴 Fechado • ${open.message}`;
-      badge.style.color = 'var(--bad)';
+  try {
+    const fees = await api('getFees');
+    if(fees.ok){
+      BAIRROS_TAXAS = Object.fromEntries(fees.items.map(f => [f.bairro, Number(f.taxa||0)]));
+      const dl = document.getElementById('bairrosList');
+      if(dl) dl.innerHTML = Object.keys(BAIRROS_TAXAS).map(b => `<option value="${b}">`).join('');
     }
-  }else{
-    badge.innerHTML = '⚠️ Horário indisponível';
+    const open = await api('getOpenStatus');
+    const badge = $('#openBadge');
+    if(open && open.ok){
+      badge.innerHTML = open.open ? `🟢 Aberto • ${open.message}` : `🔴 Fechado • ${open.message}`;
+      badge.style.color = open.open ? 'var(--ok)' : 'var(--bad)';
+    } else {
+      badge.innerHTML = '⚠️ Horário indisponível';
+      badge.style.color = 'var(--warn)';
+    }
+  } catch(e){
+    console.error('bootFeesHours', e);
+    const badge = $('#openBadge');
+    badge.innerHTML = '⚠️ Erro ao carregar horário';
     badge.style.color = 'var(--warn)';
   }
 }
+
 
 
   const $ = sel => document.querySelector(sel);
