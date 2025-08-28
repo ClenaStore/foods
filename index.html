@@ -441,17 +441,33 @@
 let BAIRROS_TAXAS = {};
 let HORARIOS = {};
 
+// ====== CONFIG DE TAXAS E HORÁRIOS ======
+let BAIRROS_TAXAS = {};
+let HORARIOS = {};
+
 async function bootFeesHours(){
+  // --- Taxas por bairro ---
   const fees = await api('getFees');
   if(fees.ok){
     BAIRROS_TAXAS = Object.fromEntries(fees.items.map(f => [f.bairro, Number(f.taxa||0)]));
-    // Preenche datalist de bairros
     const dl = document.getElementById('bairrosList');
     if(dl) dl.innerHTML = Object.keys(BAIRROS_TAXAS).map(b => `<option value="${b}">`).join('');
   }
+
+  // --- Horários de funcionamento ---
   const open = await api('getOpenStatus');
+  const badge = $('#openBadge');
   if(open.ok){
-    $('#openBadge').innerHTML = (open.open? '🟢 Aberto' : '🔴 Fechado') + ' • ' + open.message;
+    if(open.open){
+      badge.innerHTML = `🟢 Aberto • ${open.message}`;
+      badge.style.color = 'var(--ok)';
+    }else{
+      badge.innerHTML = `🔴 Fechado • ${open.message}`;
+      badge.style.color = 'var(--bad)';
+    }
+  }else{
+    badge.innerHTML = '⚠️ Horário indisponível';
+    badge.style.color = 'var(--warn)';
   }
 }
 
