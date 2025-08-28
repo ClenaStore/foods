@@ -191,7 +191,7 @@
       <div class="wrap">
         <div class="brand" onclick="showPage('menu')">
           <img src="https://github.com/ClenaStore/foods/blob/main/paste/ChatGPT%20Image%2027%20de%20ago.%20de%202025,%2019_35_02.png?raw=true" alt="logo"/>
-        <div>
+          <div>
             <div class="t1">CLENA FOODS</div>
             <div class="t2">Hamburgueria • Delivery & Retirada</div>
           </div>
@@ -833,6 +833,11 @@
     $('#btnCartFinish').disabled = !lojaAberta;
     $('#closedHint').classList.toggle('hidden', lojaAberta);
     $('#closedHintCart').classList.toggle('hidden', lojaAberta);
+    // Desabilita "Adicionar" existentes (ao alternar aberto/fechado sem re-render)
+    $$('#menuGrid .card .btn').forEach(b=>{
+      b.disabled = !lojaAberta;
+      b.textContent = lojaAberta ? 'Adicionar' : 'Fechado';
+    });
   }
 
   async function finishOrder(){
@@ -921,11 +926,16 @@
 
     if(r.ok && r.items?.length){
       r.items.forEach(o=>{
-        const entregaLabel = o?.entrega === 'pickup' ? 'Retirada'
-                           : o?.entrega === 'delivery' ? 'Entrega'
+        // Compatível mesmo que a API ainda não retorne entrega/pagamento diretamente
+        const entregaVal = o?.entrega ?? o?.order?.entrega; 
+        const payVal     = o?.pay     ?? o?.order?.pay;
+
+        const entregaLabel = entregaVal === 'pickup' ? 'Retirada'
+                           : entregaVal === 'delivery' ? 'Entrega'
                            : '—';
-        const payLabel = payMap[o?.pay] || (o?.pay ?? '—');
-        const bairroInfo = (o?.entrega==='delivery' && o?.endereco?.bairro) ? ` • ${o.endereco.bairro}` : '';
+        const payLabel = payMap[payVal] || (payVal ?? '—');
+
+        const bairroInfo = (entregaVal==='delivery' && o?.endereco?.bairro) ? ` • ${o.endereco.bairro}` : '';
 
         const li = document.createElement('div'); li.className='block';
         li.innerHTML = `
@@ -1179,30 +1189,48 @@
     renderCart();
     renderCheckout();
   }
+
+  // NOVO: Atualiza UI de aberto/fechado
+  function updateOpenUI(isOpen, message){
+    lojaAberta = !!isOpen;
+
+    const badge = document.getElementById('openBadge');
+    if (badge) {
+      badge.innerHTML = (isOpen ? `🟢 Aberto • ${message||''}` : `🔴 Fechado • ${message||''}`);
+      badge.style.color = isOpen ? 'var(--ok)' : 'var(--bad)';
+    }
+
+    // Cards / botões
+    updateAuthUI();
+    // Re-render para refletir estado nas listagens
+    renderMenu(activeCat);
+  }
+
   async function bootFeesHours(){
+    // 1) TAXAS – separado do horário para não quebrar o badge se falhar
     try {
-      // TAXAS
       const fees = await api('getFees');
       if (fees.ok){
-        BAIRROS_TAXAS = Object.fromEntries(fees.items.map(f => [f.bairro, Number(f.taxa||0)]));
+        BAIRROS_TAXAS = Object.fromEntries((fees.items||[]).map(f => [f.bairro, Number(f.taxa||0)]));
         const dl = document.getElementById('bairrosList');
         if (dl) dl.innerHTML = Object.keys(BAIRROS_TAXAS).map(b => `<option value="${b}">`).join('');
       }
-      // HORÁRIO: local
-      const open = getOpenStatusLocal();
-      lojaAberta = !!open.open;
-      const badge = document.getElementById('openBadge');
-      badge.innerHTML = open.open ? `🟢 Aberto • ${open.message}` : `🔴 Fechado • ${open.message}`;
-      badge.style.color = open.open ? 'var(--ok)' : 'var(--bad)';
-
-      // Atualiza botões e cartões conforme estado
-      updateOpenUI();
-      renderMenu(activeCat); // re-render para aplicar disable/enable nos cards
     } catch(e){
-      console.error('bootFeesHours', e);
+      console.warn('Falha ao carregar taxas:', e);
+      // não mexer no badge aqui
+    }
+
+    // 2) HORÁRIO — sempre calcula localmente
+    try {
+      const open = getOpenStatusLocal();
+      updateOpenUI(open.open, open.message);
+    } catch(e){
+      console.error('Erro ao calcular horário:', e);
       const badge = document.getElementById('openBadge');
-      badge.innerHTML = '⚠️ Erro ao carregar informações';
-      badge.style.color = 'var(--warn)';
+      if (badge){
+        badge.innerHTML = '⚠️ Erro ao calcular horário';
+        badge.style.color = 'var(--warn)';
+      }
     }
   }
 
