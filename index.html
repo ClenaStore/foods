@@ -6,6 +6,14 @@
   <title>Clena Foods • Cardápio & Pedidos</title>
   <meta name="description" content="Catálogo de produtos, complementos e pedidos com login por WhatsApp + senha, PIX e notificações." />
 
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0e0f12">
+  <!-- iOS (Safari) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+
   <!-- Ícones e fontes -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -189,10 +197,17 @@
         </div>
         <div class="actions">
           <button class="iconbtn" id="btnMap" title="Localização"><i class="fa-solid fa-location-dot"></i></button>
+
           <button class="iconbtn" id="btnCart" title="Carrinho">
             <i class="fa-solid fa-bag-shopping"></i>
             <span class="badge" id="cartBadge">0</span>
           </button>
+
+          <!-- Botão PWA -->
+          <button class="iconbtn" id="btnInstall" title="Baixar app" style="display:none">
+            <i class="fa-solid fa-download"></i>
+          </button>
+
           <button class="iconbtn" id="btnPerfil" title="Perfil"><i class="fa-solid fa-user"></i></button>
         </div>
       </div>
@@ -240,7 +255,7 @@
         </label>
       </div>
 
-      <!-- Endereço (com seletor + taxa por bairro) -->
+      <!-- Endereço -->
       <div id="addrForm" class="block hidden" style="margin-top:12px">
         <h3 style="margin:0 0 8px">Endereço de Entrega</h3>
 
@@ -287,7 +302,7 @@
       <div class="row"><span>Subtotal</span><strong id="checkoutSub">R$ 0,00</strong></div>
       <div class="row"><span>Entrega</span><strong id="checkoutShip">—</strong></div>
 
-      <!-- Check-in (aparece na retirada) -->
+      <!-- Check-in (retirada) -->
       <div id="pickupCheckin" class="block hidden" style="margin-top:12px">
         <h3 style="margin:0 0 6px"><i class="fa-solid fa-person-walking"></i> Check-in de Retirada</h3>
         <p style="color:var(--muted);margin:0 0 8px">Ao chegar na loja, faça o check-in para agilizar a entrega do pedido.</p>
@@ -394,6 +409,23 @@
         <button class="btn secondary" id="btnClearRoute"><i class="fa-solid fa-route"></i> Remover rota</button>
       </div>
     </dialog>
+
+    <!-- DIALOG iOS INSTALAÇÃO -->
+    <dialog id="iosInstallDlg" style="max-width:420px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
+        <strong>Instalar no iPhone</strong>
+        <button class="btn secondary" onclick="document.getElementById('iosInstallDlg').close()">
+          <i class="fa-solid fa-xmark"></i> Fechar
+        </button>
+      </div>
+      <div class="block" style="margin:0">
+        <p style="margin:0 0 8px;color:var(--muted)">
+          1) Toque no botão <strong>Compartilhar</strong> do Safari (quadrado com seta).<br>
+          2) Escolha <strong>Adicionar à Tela de Início</strong>.<br>
+          3) Confirme com <strong>Adicionar</strong>.
+        </p>
+      </div>
+    </dialog>
   </div><!-- /#app -->
 
   <!-- DRAWER DO CARRINHO -->
@@ -428,16 +460,14 @@
     window.addEventListener('resize',rerun); window.addEventListener('orientationchange',rerun);
   })();
 
-  // ========================== CONFIGURAÇÃO ===============================
-  // SUBSTITUA PELO SEU /exec
+  // ========================== CONFIG ===============================
   const API_URL = 'https://script.google.com/macros/s/AKfycbwfJ5tNEqJrcstecKNN7U-tw_4AkRvm0H-oE9MxeRyW4uq9vpD174AtnE7mMJyGjPHS/exec';
   const PIX_CHAVE = '08338807567';
   const PIX_RECEPTOR = 'CLENA FOODS';
   const PIX_CIDADE = 'BARREIRAS-BA';
-  const STORE_LAT = -12.139814, STORE_LNG = -44.9893035; // Rua Pernambuco, 629 — Vila Brasil
+  const STORE_LAT = -12.139814, STORE_LNG = -44.9893035;
 
   // ====== HORÁRIOS LOCAIS (sem planilha) ======
-  // Edite livremente os horários abaixo:
   const LOCAL_HORARIOS = {
     dom: { abre: '17:00', fecha: '23:59', ativo: true },
     seg: { abre: '11:00', fecha: '23:59', ativo: true },
@@ -471,7 +501,7 @@
     return { open, message: msg };
   }
 
-  // ====== CONFIG DE TAXAS (carrega do backend) ======
+  // ====== CONFIG DE TAXAS (backend) ======
   let BAIRROS_TAXAS = {};
 
   const $  = sel => document.querySelector(sel);
@@ -494,7 +524,7 @@
   let activeCat = null;
   const pages = ['menu','complementos','pedidos','perfil'];
 
-  /* ===== Helpers de UI: Busy, Skeletons ===== */
+  /* ===== Helpers ===== */
   function setBtnBusy(btn, busy=true, label='Aguarde...'){
     if(!btn) return;
     if(busy){
@@ -531,7 +561,7 @@
     }
   }
 
-  // ===== Navegação básica =====
+  // ===== Navegação =====
   $$('.tabbar [data-page]').forEach(btn=>{
     btn.onclick = ()=>{
       $$('.tabbar button').forEach(b=>b.classList.remove('active'));
@@ -558,7 +588,7 @@
     searchTO=setTimeout(()=>{ renderMenu(activeCat); }, 120);
   });
 
-  // ===== API helper (sem headers p/ evitar preflight) =====
+  // ===== API =====
   async function api(acao, payload = {}) {
     try {
       showTopbarLoader(true);
@@ -744,7 +774,6 @@
     const addr = $('#addrForm');
     addr.classList.toggle('hidden', entrega!=='delivery');
 
-    // mostra/oculta check-in
     $('#pickupCheckin')?.classList.toggle('hidden', entrega!=='pickup');
 
     if(entrega==='delivery'){
@@ -998,12 +1027,11 @@
     if(n.order_id) fetchOrders();
   }
 
-  // ======== ENDEREÇOS ========
+  // ===== Endereços =====
   const ADDR_KEY='cf_addrs';
   function addrLoad(){ return store.get(ADDR_KEY, []); }
   function addrSaveLocal(arr){ store.set(ADDR_KEY, arr); }
   function addrRenderList(){
-    // datalist de bairros
     const dl = document.getElementById('bairrosList');
     if(dl){ dl.innerHTML = Object.keys(BAIRROS_TAXAS).map(b=>`<option value="${b}">`).join(''); }
 
@@ -1093,7 +1121,6 @@
   }
   function addrDelete(ix){
     const items=addrLoad(); items.splice(ix,1); addrSaveLocal(items); addrRenderList();
-    // backend não tem deleteAddress — apenas remove localmente
   }
 
   // ====== TAXA POR BAIRRO & HORÁRIOS (BOOT) ======
@@ -1112,14 +1139,14 @@
   }
   async function bootFeesHours(){
     try {
-      // TAXAS: busca do backend
+      // TAXAS
       const fees = await api('getFees');
       if (fees.ok){
         BAIRROS_TAXAS = Object.fromEntries(fees.items.map(f => [f.bairro, Number(f.taxa||0)]));
         const dl = document.getElementById('bairrosList');
         if (dl) dl.innerHTML = Object.keys(BAIRROS_TAXAS).map(b => `<option value="${b}">`).join('');
       }
-      // HORÁRIO: local (sem planilha)
+      // HORÁRIO: local
       const open = getOpenStatusLocal();
       const badge = document.getElementById('openBadge');
       badge.innerHTML = open.open ? `🟢 Aberto • ${open.message}` : `🔴 Fechado • ${open.message}`;
@@ -1136,6 +1163,13 @@
   function haversineKM(lat1,lon1,lat2,lon2){
     const toRad=v=>v*Math.PI/180, R=6371;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
+    const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*sin(dLon/2)**2;
+  }
+  // (corrigindo o seno acima — reimplementando corretamente:)
+  function sin(x){return Math.sin(x)}
+  function haversineKM(lat1,lon1,lat2,lon2){
+    const toRad=v=>v*Math.PI/180, R=6371;
+    const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
     const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
     return 2*R*Math.asin(Math.sqrt(a));
   }
@@ -1145,7 +1179,7 @@
     el.textContent='⏳ Obtendo localização…';
     navigator.geolocation.getCurrentPosition(async pos=>{
       const {latitude, longitude} = pos.coords;
-      const dist = haversineKM(latitude, longitude, STORE_LAT, STORE_LNG) * 1000; // m
+      const dist = haversineKM(latitude, longitude, STORE_LAT, STORE_LNG) * 1000;
       if(dist <= 200){
         el.textContent='✅ Check-in confirmado! Você está na loja.';
         store.set('cf_checkin', {lat:latitude,lng:longitude,ts:Date.now()});
@@ -1154,6 +1188,52 @@
       }
     }, ()=>{ el.textContent='❌ Não foi possível obter sua localização.'; });
   }
+
+  // ===== PWA: Service Worker + Instalação =====
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    });
+  }
+
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('btnInstall');
+
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+  }
+  function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+  function showInstallButton(show) { if (installBtn) installBtn.style.display = show ? 'grid' : 'none'; }
+
+  if (isStandalone()) showInstallButton(false);
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!isStandalone()) showInstallButton(true);
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    showInstallButton(false);
+  });
+
+  installBtn?.addEventListener('click', async () => {
+    if (isIOS()) {
+      document.getElementById('iosInstallDlg')?.showModal();
+      return;
+    }
+    if (!deferredPrompt) {
+      alert('Se o navegador suportar instalação, um botão aparecerá automaticamente.');
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    showInstallButton(false);
+    if (outcome !== 'accepted') setTimeout(()=> showInstallButton(true), 8000);
+  });
   </script>
 </body>
 </html>
