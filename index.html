@@ -267,7 +267,7 @@
       </div>
       <form id="loginBox" class="block" style="margin-top:12px">
         <h3>Entrar</h3>
-        <label>WhatsApp <input id="pwa" class="input" placeholder="(71) 90000-0000"/></label>
+        <label>WhatsApp <input id="pwa" class="input" placeholder="(77) 9 0000-0000"/></label>
         <label>Senha <input id="ppw" type="password" class="input" placeholder="••••••"/></label>
         <button type="button" class="btn" onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> Entrar</button>
         <p style="color:var(--muted);font-size:13px">Não tem cadastro? Role para criar.</p>
@@ -277,7 +277,7 @@
         <h3>Criar conta</h3>
         <div class="grid2">
           <label>Nome completo <input id="s-nome" class="input"/></label>
-          <label>WhatsApp <input id="s-wa" class="input" placeholder="(71) 90000-0000"/></label>
+          <label>WhatsApp <input id="s-wa" class="input" placeholder="(77) 9 0000-0000"/></label>
           <label>E-mail <input id="s-mail" class="input"/></label>
           <label>Senha <input id="s-senha" type="password" class="input"/></label>
           <label>CPF (opcional) <input id="s-cpf" class="input"/></label>
@@ -285,11 +285,18 @@
         </div>
         <button type="button" class="btn" onclick="signup()"><i class="fa-solid fa-user-plus"></i> Cadastrar</button>
       </form>
+
+      <!-- HISTÓRICO DO CLIENTE -->
       <div id="profileBox" class="hidden" style="margin-top:16px">
         <div style="display:flex;align-items:center;gap:12px">
           <div style="width:48px;height:48px;border-radius:50%;background:#0f1115;border:1px solid var(--line);display:grid;place-items:center"><i class="fa-solid fa-user"></i></div>
           <div><div id="uNome" style="font-weight:800"></div><div id="uWa" style="color:var(--muted);font-size:13px"></div></div>
           <div style="margin-left:auto"><button class="btn secondary" onclick="logout()">Sair</button></div>
+        </div>
+
+        <div class="block" style="margin-top:12px">
+          <h3 style="margin:0 0 8px"><i class="fa-solid fa-clock-rotate-left"></i> Meus Pedidos</h3>
+          <div id="ordersList" style="display:grid;gap:8px"></div>
         </div>
       </div>
     </section>
@@ -313,8 +320,8 @@
       </div>
       <div id="mapWrap"><div id="map"></div></div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        <span class="pill"><i class="fa-solid fa-store"></i> Loja: Barreiras-BA</span>
-        <span class="pill" id="mapStatus">📍 Calcule a rota</span>
+        <span class="pill"><i class="fa-solid fa-store"></i> Loja: Rua Pernambuco, 629 — Vila Brasil, Barreiras-BA</span>
+        <span class="pill" id="mapStatus">📍 Toque em “Ver rota” para traçar o caminho até a loja</span>
       </div>
       <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn" id="btnUseLoc"><i class="fa-solid fa-person-walking"></i> Ver rota</button>
@@ -362,7 +369,10 @@
   const PIX_CIDADE = 'SALVADOR';
 
   // ===== COORDENADAS DA LOJA (fixas) =====
-  const STORE_LAT = -12.9979, STORE_LNG = -38.4510; // Pituba (exemplo)
+  // Rua Pernambuco, 629 — Vila Brasil, Barreiras-BA, CEP 47801-370
+  // Fontes de coordenadas do CEP informam lat/lng aproximados:
+  // lat -12.139814, lng -44.9893035
+  const STORE_LAT = -12.139814, STORE_LNG = -44.9893035;
 
   // ======================================================================
 
@@ -434,7 +444,7 @@
   (async function init(){
     await loadMenu();
     await loadComplements();
-    if(user) applyUser();
+    if(user) { applyUser(); fetchOrders(); }
     renderCart();
     updateAuthUI();
   })();
@@ -494,6 +504,15 @@
       .forEach(i => grid.appendChild(cardItem(i)));
   }
 
+  function requireLoginThen(action){
+    if(!user){
+      alert('Você precisa estar logado para adicionar itens.');
+      setActiveTab('perfil'); showPage('perfil');
+      return;
+    }
+    action();
+  }
+
   function cardItem(i){
     const el = document.createElement('div'); el.className='card';
     el.innerHTML = `
@@ -503,9 +522,10 @@
         <div class="desc">${i.desc||''}</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div class="price">${BRL(i.price)}</div>
-          <button class="btn" onclick='openItem(${JSON.stringify(i)})'>Adicionar</button>
+          <button class="btn">Adicionar</button>
         </div>
       </div>`;
+    el.querySelector('.btn').onclick = ()=> requireLoginThen(()=> openItem(i));
     return el;
   }
 
@@ -542,6 +562,10 @@
 
   // CARRINHO
   function addToCart(item){
+    if(!user){ // segurança extra
+      alert('Faça login para adicionar itens.');
+      setActiveTab('perfil'); showPage('perfil'); return;
+    }
     const k = JSON.stringify({id:item.id, comps:item.comps.map(c=>c.id).sort()});
     const found = cart.find(x => JSON.stringify({id:x.id, comps:x.comps.map(c=>c.id).sort()})===k);
     if(found){ found.qty += 1 } else { cart.push(item) }
@@ -656,7 +680,6 @@
     const order = {
       entrega, pay: payMethod,
       endereco,
-      obs: '', // você pode adicionar textarea se quiser
       items: cart,
       total: cart.reduce((a,it)=> a + (it.price + (it.comps||[]).reduce((x,y)=>x+y.price,0)) * it.qty, 0)
     };
@@ -664,7 +687,7 @@
     if(!r.ok) return alert('Erro ao enviar pedido: '+(r.error||''));
     cart=[]; store.set('cf_cart',cart); renderCart();
     alert('Pedido enviado! Código: '+r.id);
-    setActiveTab('menu'); showPage('menu');
+    setActiveTab('perfil'); showPage('perfil'); fetchOrders();
   }
 
   // PIX
@@ -712,7 +735,14 @@
     const whatsapp = $('#pwa').value.trim();
     const senha = $('#ppw').value.trim();
     const r = await api('login', {whatsapp, senha});
-    if(r.ok){ user=r.user; token=r.token; store.set('cf_user',user); store.set('cf_token',token); applyUser(); alert('Bem-vindo!') } else alert('Falha no login: '+(r.error||''))
+    if(r.ok){ 
+      user=r.user; token=r.token; 
+      store.set('cf_user',user); store.set('cf_token',token); 
+      applyUser(); alert('Bem-vindo!'); 
+      fetchOrders();
+    } else {
+      alert('Falha no login: '+(r.error||''));
+    }
   }
   async function signup(){
     const payload = { nome:$('#s-nome').value.trim(), whatsapp:$('#s-wa').value.trim(), email:$('#s-mail').value.trim(), senha:$('#s-senha').value.trim(), cpf:$('#s-cpf').value.trim(), nasc:$('#s-nasc').value }
@@ -720,6 +750,28 @@
     if(r.ok){ alert('Cadastro realizado! Faça o login.'); setActiveTab('perfil'); showPage('perfil'); } else alert('Erro no cadastro: '+(r.error||''))
   }
   function logout(){ user=null; token=null; store.del('cf_user'); store.del('cf_token'); updateAuthUI(); location.reload() }
+
+  // HISTÓRICO DO CLIENTE
+  async function fetchOrders(){
+    if(!user) return;
+    const r = await api('listOrders');
+    const box = document.getElementById('ordersList'); box.innerHTML='';
+    if(r.ok && r.items?.length){
+      r.items.forEach(o=>{
+        const li = document.createElement('div'); li.className='block';
+        li.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+            <div><strong>Pedido #${o.id}</strong><div style="color:var(--muted);font-size:12px">${new Date(o.created_at).toLocaleString()}</div></div>
+            <span class="pill">Pagamento: <strong>${o.status_pagamento||'Pendente'}</strong></span>
+            <span class="pill">Andamento: <strong>${o.status_pedido||'Recebido'}</strong></span>
+            <span class="pill">Total: <strong>${BRL(o.total||0)}</strong></span>
+          </div>`;
+        box.appendChild(li);
+      });
+    } else {
+      box.innerHTML = `<div class="empty">Você ainda não possui pedidos.</div>`;
+    }
+  }
 
   // NAVEGAÇÃO
   function showPage(id){
@@ -735,15 +787,15 @@
     dlg.showModal();
     setTimeout(()=>{ // garante layout pronto
       if(!mapReady){
-        map = L.map('map', {zoomControl:false}).setView([STORE_LAT, STORE_LNG], 14);
+        map = L.map('map', {zoomControl:false}).setView([STORE_LAT, STORE_LNG], 16);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(map);
-        storeMarker = L.marker([STORE_LAT, STORE_LNG]).addTo(map).bindPopup('Clena Foods - Loja');
+        storeMarker = L.marker([STORE_LAT, STORE_LNG]).addTo(map).bindPopup('Clena Foods — Rua Pernambuco, 629');
         mapReady=true;
       } else {
         map.invalidateSize();
-        map.setView([STORE_LAT, STORE_LNG], 14);
+        map.setView([STORE_LAT, STORE_LNG], 16);
       }
-      document.getElementById('mapStatus').textContent = '📍 Loja fixa • Toque para usar sua localização';
+      document.getElementById('mapStatus').textContent = '📍 Loja fixa — Rua Pernambuco, 629';
     }, 50);
   }
 
@@ -757,7 +809,6 @@
       map.setView([latitude, longitude], 14);
       document.getElementById('mapStatus').textContent = '✅ Localização ativa • Rota traçada';
 
-      // Traçar rota até a loja (OSRM demo)
       if(routing){ routing.remove(); }
       routing = L.Routing.control({
         waypoints: [ L.latLng(latitude, longitude), L.latLng(STORE_LAT, STORE_LNG) ],
@@ -773,7 +824,7 @@
   $('#btnClearRoute').onclick = ()=>{
     if(routing){ routing.remove(); routing=null; }
     if(userMarker){ userMarker.remove(); userMarker=null; }
-    map.setView([STORE_LAT, STORE_LNG], 14);
+    map.setView([STORE_LAT, STORE_LNG], 16);
     document.getElementById('mapStatus').textContent = '📍 Loja fixa • Rota removida';
   };
   </script>
