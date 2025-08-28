@@ -114,6 +114,7 @@
     .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
     .btn.busy{opacity:.7; pointer-events:none}
     .btn .spin{width:14px;height:14px;border-radius:50%;border:2px solid #fff;border-top-color:transparent;display:inline-block;margin-right:6px;vertical-align:-2px;animation:spin .8s linear infinite}
+    .btn:disabled{opacity:.5; cursor:not-allowed}
 
     /* ===== TAB BAR ===== */
     .tabbar{
@@ -190,7 +191,7 @@
       <div class="wrap">
         <div class="brand" onclick="showPage('menu')">
           <img src="https://github.com/ClenaStore/foods/blob/main/paste/ChatGPT%20Image%2027%20de%20ago.%20de%202025,%2019_35_02.png?raw=true" alt="logo"/>
-          <div>
+        <div>
             <div class="t1">CLENA FOODS</div>
             <div class="t2">Hamburgueria • Delivery & Retirada</div>
           </div>
@@ -314,6 +315,7 @@
       <button class="btn" id="btnFinish" style="margin-top:12px" onclick="finishOrder()" disabled>
         <i class="fa-solid fa-paper-plane"></i> Confirmar Pedido
       </button>
+      <div id="closedHint" class="pill hidden" style="margin-top:8px">🔴 Estamos fechados no momento</div>
     </section>
 
     <section class="page hidden" id="page-perfil">
@@ -441,8 +443,9 @@
       <div class="totalLine" style="border-top:1px dashed #334155; padding-top:8px"><span>Total</span><strong id="grandTotal">R$ 0,00</strong></div>
       <div style="display:flex;gap:8px">
         <button class="btn secondary" style="flex:1" onclick="clearCart()"><i class="fa-solid fa-trash"></i> Limpar</button>
-        <button class="btn" style="flex:2" onclick="goCheckout()"><i class="fa-solid fa-credit-card"></i> Finalizar</button>
+        <button class="btn" id="btnCartFinish" style="flex:2" onclick="goCheckout()"><i class="fa-solid fa-credit-card"></i> Finalizar</button>
       </div>
+      <div id="closedHintCart" class="pill hidden" style="margin-top:8px;text-align:center">🔴 Estamos fechados no momento</div>
     </div>
   </aside>
 
@@ -503,6 +506,7 @@
 
   // ====== CONFIG DE TAXAS (backend) ======
   let BAIRROS_TAXAS = {};
+  let lojaAberta = true; // controlará o bloqueio de pedidos
 
   const $  = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -618,7 +622,7 @@
 
     // Endereços + taxas/horários
     addrRenderList();
-    await bootFeesHours();
+    await bootFeesHours();           // define lojaAberta e atualiza UI
     setInterval(bootFeesHours, 60000);
   })();
 
@@ -661,11 +665,19 @@
       setActiveTab('perfil'); showPage('perfil');
       return;
     }
+    // Bloqueio quando fechado
+    if(!lojaAberta){
+      const status = getOpenStatusLocal();
+      alert(`Estamos fechados no momento. ${status.message}.`);
+      return;
+    }
     action();
   }
 
   function cardItem(i){
     const el = document.createElement('div'); el.className='card';
+    const status = getOpenStatusLocal();
+    const disabled = !lojaAberta;
     el.innerHTML = `
       <div class="img"><img src="${i.img}" alt="${i.name}" loading="lazy"></div>
       <div class="body">
@@ -673,10 +685,12 @@
         <div class="desc">${i.desc||''}</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div class="price">${BRL(i.price)}</div>
-          <button class="btn">Adicionar</button>
+          <button class="btn" ${disabled?'disabled':''} title="${disabled? status.message : 'Adicionar ao carrinho'}">
+            ${disabled ? 'Fechado' : 'Adicionar'}
+          </button>
         </div>
       </div>`;
-    el.querySelector('.btn').onclick = ()=> requireLoginThen(()=> openItem(i));
+    el.querySelector('.btn').onclick = ()=> !disabled && requireLoginThen(()=> openItem(i));
     return el;
   }
 
@@ -702,6 +716,7 @@
       </div>`;
     $('#itemBox').innerHTML = html;
     $('#addBtn').onclick = () => {
+      if(!lojaAberta){ const st=getOpenStatusLocal(); alert(`Estamos fechados no momento. ${st.message}.`); return; }
       const chec = Array.from($('#dlgItem').querySelectorAll('input[type=checkbox]:checked'))
                   .map(ch => ({ id: ch.dataset.compid, name: complements.find(c=>c.id===ch.dataset.compid)?.name || 'Extra', price: Number(ch.dataset.compprice) }));
       addToCart({ id:i.id, name:i.name, price:i.price, qty:1, img:i.img, comps:chec });
@@ -714,6 +729,7 @@
   // ===== CARRINHO =====
   function addToCart(item){
     if(!user){ alert('Faça login para adicionar itens.'); setActiveTab('perfil'); showPage('perfil'); return; }
+    if(!lojaAberta){ const st=getOpenStatusLocal(); alert(`Estamos fechados no momento. ${st.message}.`); return; }
     const k = JSON.stringify({id:item.id, comps:item.comps.map(c=>c.id).sort()});
     const found = cart.find(x => JSON.stringify({id:x.id, comps:x.comps.map(c=>c.id).sort()})===k);
     if(found){ found.qty += 1 } else { cart.push(item) }
@@ -762,7 +778,10 @@
     $('#grandTotal').textContent = BRL(sub + (entrega==='delivery' ? shipT : 0));
     renderCheckout();
   }
-  function goCheckout(){ setActiveTab('pedidos'); showPage('pedidos'); toggleCart(false); window.scrollTo({top:0,behavior:'smooth'}) }
+  function goCheckout(){ 
+    if(!lojaAberta){ const st=getOpenStatusLocal(); alert(`Estamos fechados no momento. ${st.message}.`); return; }
+    setActiveTab('pedidos'); showPage('pedidos'); toggleCart(false); window.scrollTo({top:0,behavior:'smooth'}) 
+  }
 
   // ===== Entrega x Retirada =====
   function setEntrega(btnOrMode){
@@ -809,11 +828,18 @@
   }
 
   // ===== Login =====
-  function updateAuthUI(){ $('#btnFinish').disabled = !user; }
+  function updateAuthUI(){ 
+    $('#btnFinish').disabled = !user || !lojaAberta; 
+    $('#btnCartFinish').disabled = !lojaAberta;
+    $('#closedHint').classList.toggle('hidden', lojaAberta);
+    $('#closedHintCart').classList.toggle('hidden', lojaAberta);
+  }
 
   async function finishOrder(){
     if(!user){ setActiveTab('perfil'); showPage('perfil'); alert('Você precisa estar logado para finalizar o pedido.'); return }
     if(!cart.length) return alert('Seu carrinho está vazio.');
+    if(!lojaAberta){ const st=getOpenStatusLocal(); alert(`Estamos fechados no momento. ${st.message}.`); return; }
+
     let endereco = null;
     if(entrega==='delivery'){
       const required = [['f-cep','CEP'],['f-cidade','Cidade'],['f-bairro','Bairro'],['f-rua','Rua/Avenida'],['f-num','Número']];
@@ -890,15 +916,31 @@
     ordersSkeleton();
     const r = await api('listOrders');
     const box = $('#ordersList'); box.innerHTML='';
+
+    const payMap = { pix:'PIX', credito:'Crédito', debito:'Débito', dinheiro:'Dinheiro' };
+
     if(r.ok && r.items?.length){
       r.items.forEach(o=>{
+        const entregaLabel = o?.entrega === 'pickup' ? 'Retirada'
+                           : o?.entrega === 'delivery' ? 'Entrega'
+                           : '—';
+        const payLabel = payMap[o?.pay] || (o?.pay ?? '—');
+        const bairroInfo = (o?.entrega==='delivery' && o?.endereco?.bairro) ? ` • ${o.endereco.bairro}` : '';
+
         const li = document.createElement('div'); li.className='block';
         li.innerHTML = `
           <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
-            <div><strong>Pedido #${o.id}</strong><div style="color:var(--muted);font-size:12px">${new Date(o.created_at).toLocaleString()}</div></div>
-            <span class="pill">Pagamento: <strong>${o.status_pagamento||'Pendente'}</strong></span>
-            <span class="pill">Andamento: <strong>${o.status_pedido||'Recebido'}</strong></span>
-            <span class="pill">Total: <strong>${BRL(o.total||0)}</strong></span>
+            <div>
+              <strong>Pedido #${o.id}</strong>
+              <div style="color:var(--muted);font-size:12px">${new Date(o.created_at).toLocaleString()}</div>
+            </div>
+
+            <span class="pill">Entrega: <strong>${entregaLabel}${bairroInfo}</strong></span>
+            <span class="pill">Pagamento: <strong>${payLabel}</strong></span>
+
+            <span class="pill">Status Pagto: <strong>${o.status_pagamento || 'Pendente'}</strong></span>
+            <span class="pill">Andamento: <strong>${o.status_pedido || 'Recebido'}</strong></span>
+            <span class="pill">Total: <strong>${BRL(o.total || 0)}</strong></span>
           </div>`;
         box.appendChild(li);
       });
@@ -1148,9 +1190,14 @@
       }
       // HORÁRIO: local
       const open = getOpenStatusLocal();
+      lojaAberta = !!open.open;
       const badge = document.getElementById('openBadge');
       badge.innerHTML = open.open ? `🟢 Aberto • ${open.message}` : `🔴 Fechado • ${open.message}`;
       badge.style.color = open.open ? 'var(--ok)' : 'var(--bad)';
+
+      // Atualiza botões e cartões conforme estado
+      updateOpenUI();
+      renderMenu(activeCat); // re-render para aplicar disable/enable nos cards
     } catch(e){
       console.error('bootFeesHours', e);
       const badge = document.getElementById('openBadge');
@@ -1160,13 +1207,6 @@
   }
 
   // ===== CHECK-IN RETIRADA =====
-  function haversineKM(lat1,lon1,lat2,lon2){
-    const toRad=v=>v*Math.PI/180, R=6371;
-    const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
-    const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*sin(dLon/2)**2;
-  }
-  // (corrigindo o seno acima — reimplementando corretamente:)
-  function sin(x){return Math.sin(x)}
   function haversineKM(lat1,lon1,lat2,lon2){
     const toRad=v=>v*Math.PI/180, R=6371;
     const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
