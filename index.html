@@ -61,7 +61,7 @@
       border-bottom:1px solid var(--line);
     }
     .wrap{padding:12px 14px; display:flex; align-items:center; gap:10px}
-    .brand{display:flex;align-items:center;gap:10px; cursor:pointer}
+    .brand{display:flex;align-items:center;gap:10px}
     .brand img{width:34px;height:34px;border-radius:10px;box-shadow:var(--shadow)}
     .brand .t1{font-weight:800;letter-spacing:.2px;font-size:15px}
     .brand .t2{font-size:11px;color:var(--muted)}
@@ -464,7 +464,7 @@
   })();
 
   // ========================== CONFIG ===============================
-  const API_URL = 'https://script.google.com/macros/s/AKfycbykZ44RYBq0mJqXzQn48swsRgKMsYkG5mvQFT2ek22CAjD2Ebf5VE5jidjOnKfAFvQz/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxjGPNBX27DtQzIziM-tlsjVzxOt9bV9RP4TDgZWEIhJVnoowTtfIxlWepYedltBbVy/exec';
   const PIX_CHAVE = '08338807567';
   const PIX_RECEPTOR = 'CLENA FOODS';
   const PIX_CIDADE = 'BARREIRAS-BA';
@@ -596,14 +596,9 @@
   async function api(acao, payload = {}) {
     try {
       showTopbarLoader(true);
-      const res = await fetch(API_URL, { 
-        method:'POST', 
-        headers:{ 'Content-Type': 'application/json;charset=UTF-8' },
-        body: JSON.stringify({ acao, token, ...payload }) 
-      });
+      const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({ acao, token, ...payload }) });
       const text = await res.text();
-      let data; 
-      try{ data = JSON.parse(text); }catch(e){ throw new Error(`Resposta não-JSON (HTTP ${res.status}). ${text.slice(0,200)}...`); }
+      let data; try{ data = JSON.parse(text); }catch(e){ throw new Error(`Resposta não-JSON (HTTP ${res.status}). ${text.slice(0,160)}...`); }
       if(!res.ok || data.ok===false) throw new Error(data.error || `HTTP ${res.status}`);
       return data;
     } catch (e) {
@@ -620,16 +615,10 @@
     menuSkeleton(); 
     await loadMenu();
     await loadComplements();
-
-    // Seleciona defaults visuais no checkout
-    setEntrega('delivery');
-    const payBtn = $$('#page-pedidos [data-pay]').find(b=> b.dataset.pay===payMethod);
-    if (payBtn) { payBtn.classList.add('active'); if (payMethod==='pix') $('#pixBox').classList.remove('hidden'); }
-
     if(user) { 
       applyUser(); 
       await fetchOrders({showSkeleton:true});
-      startOrdersAutoRefresh(10000);
+      startOrdersAutoRefresh(10000);   // <-- auto-refresh a cada 10s
     }
     renderCart();
     updateAuthUI();
@@ -640,15 +629,12 @@
     await bootFeesHours();           // define lojaAberta e atualiza UI
     setInterval(bootFeesHours, 60000);
 
-    // Atualiza pedidos quando a aba volta ao foco
+    // Quando a aba volta para o foco, atualiza pedidos
     document.addEventListener('visibilitychange', ()=>{
       if(!document.hidden && user){
         fetchOrders({showSkeleton:false});
       }
     });
-
-    // Recalcula taxa ao digitar o bairro (checkout)
-    $('#f-bairro')?.addEventListener('input', calcAndRenderTax);
   })();
 
   async function loadMenu(){
@@ -915,7 +901,7 @@
       store.set('cf_user',user); store.set('cf_token',token); 
       applyUser(); alert('Bem-vindo!'); 
       await fetchOrders({showSkeleton:true});
-      startOrdersAutoRefresh(10000);
+      startOrdersAutoRefresh(10000);   // <-- liga auto-refresh após login
       startPolling();
     } else {
       alert('Falha no login: '+(r.error||'')); 
@@ -939,7 +925,7 @@
   }
 
   function logout(){
-    stopOrdersAutoRefresh();
+    stopOrdersAutoRefresh();         // <-- garante parar o timer
     user=null; token=null; store.del('cf_user'); store.del('cf_token'); location.reload()
   }
 
@@ -953,13 +939,8 @@
 
   function renderOrdersList(items){
     const box = $('#ordersList'); box.innerHTML='';
+
     const payMap = { pix:'PIX', credito:'Crédito', debito:'Débito', dinheiro:'Dinheiro' };
-    const fmtDT = (v)=>{
-      if (v==null) return '-';
-      const t = typeof v === 'number' ? v : Date.parse(v);
-      if (isNaN(t)) return '-';
-      return new Date(t).toLocaleString();
-    };
 
     if(items.length){
       items.forEach(o=>{
@@ -978,7 +959,7 @@
           <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
             <div>
               <strong>Pedido #${o.id}</strong>
-              <div style="color:var(--muted);font-size:12px">${fmtDT(o.created_at)}</div>
+              <div style="color:var(--muted);font-size:12px">${new Date(o.created_at).toLocaleString()}</div>
             </div>
 
             <span class="pill">Entrega: <strong>${entregaLabel}${bairroInfo}</strong></span>
@@ -1080,41 +1061,28 @@
   function copyPix(){ const ta = $('#pixCop'); ta.select(); document.execCommand('copy'); alert('Código PIX copiado!'); }
 
   // ===== Notificações (cliente) =====
-  let notifSince = Number(store.get('cf_notif_since', Date.now()-3600*1000)); // numérico
+  let notifSince = Number(store.get('cf_notif_since', Date.now()-3600*1000));
   let pollTimer = null;
-
   function setupNotifications(){
     if('Notification' in window && Notification.permission==='default'){
       setTimeout(()=> Notification.requestPermission().catch(()=>{}), 800);
     }
     startPolling();
   }
-
   function startPolling(){
     if(pollTimer) clearTimeout(pollTimer);
     const loop = async ()=>{
       try{
         if(!user){ pollTimer = setTimeout(loop, 10000); return; }
         const r = await api('pollNotifications', { since: notifSince });
-        if(r.ok){
-          const items = Array.isArray(r.items) ? r.items : [];
-          items.forEach(n => {
-            n.created_at = typeof n.created_at === 'number' ? n.created_at : Date.parse(n.created_at);
-            if (isNaN(n.created_at)) n.created_at = 0;
-            showNotification(n);
-          });
-          const maxTs = items.reduce((m,it)=> Math.max(m, it.created_at||0), notifSince);
-          const nowSrv = typeof r.now === 'number' ? r.now : Date.now();
-          const nextSince = Math.max(maxTs, nowSrv);
-          if(nextSince > notifSince){
-            notifSince = nextSince;
-            store.set('cf_notif_since', notifSince);
-          }
+        if(r.ok && Array.isArray(r.items)){
+          r.items.forEach(showNotification);
+          const maxTs = r.items.reduce((m,it)=> Math.max(m, it.created_at||0), notifSince);
+          if(maxTs>notifSince){ notifSince = maxTs; store.set('cf_notif_since', notifSince); }
         }
       }catch(e){/* noop */}
       pollTimer = setTimeout(loop, 10000);
-    };
-    loop();
+    }; loop();
   }
   function showNotification(n){
     const title = n.title || 'Atualização do pedido';
@@ -1123,7 +1091,7 @@
       const note = new Notification(title, { body });
       note.onclick = ()=> { window.focus(); setActiveTab('perfil'); showPage('perfil'); };
     }else{
-      console.log('NOTIF:', title, body);
+      alert(`${title}\n\n${body}`);
     }
     if(n.order_id) fetchOrders({showSkeleton:false});
   }
@@ -1207,7 +1175,7 @@
   }
   function addrEdit(ix){
     const items=addrLoad(); const a=items[ix]; if(!a) return;
-    $('#a-cep').value=a.cep||';
+    $('#a-cep').value=a.cep||'';
     $('#a-cidade').value=a.cidade||'';
     $('#a-bairro').value=a.bairro||'';
     $('#a-rua').value=a.rua||'';
@@ -1237,7 +1205,6 @@
     if(el) el.textContent = t==null ? '—' : BRL(t);
     renderCart();
     renderCheckout();
-    if (payMethod==='pix') createPix();
   }
 
   // Atualiza UI aberto/fechado
