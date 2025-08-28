@@ -171,7 +171,7 @@
       <div class="wrap">
         <div class="brand" onclick="showPage('menu')">
           <img src="https://images.unsplash.com/photo-1544027993-37dbfe43562a?q=80&w=120&auto=format&fit=crop" alt="logo"/>
-          <div>
+        <div>
             <div class="t1">CLENA FOODS</div>
             <div class="t2">Hamburgueria • Delivery & Retirada</div>
           </div>
@@ -363,17 +363,14 @@
   })();
 
   // ========================== CONFIGURAÇÃO ===============================
-  const API_URL = 'https://script.google.com/macros/s/AKfycby2wcP1EDO3iyAs8ofVS4jxXEPDev70QMwUS6krOqjBGWLZPVhkz587_GSZeRqGhtzs/exec'; // <- Apps Script WebApp
-  const PIX_CHAVE = '08338807567'; // chave aleatória/CNPJ/CPF/telefone/email
+  // COLE AQUI a URL /exec do seu WebApp (Implantar > Aplicativo da Web)
+  const API_URL = 'PASTE_YOUR_WEBAPP_EXEC_URL_HERE';
+  const PIX_CHAVE = '08338807567'; // sua chave PIX (telefone/aleatória/email/cpf/cnpj)
   const PIX_RECEPTOR = 'CLENA FOODS';
   const PIX_CIDADE = 'BARREIRAS-BA';
 
-  // ===== COORDENADAS DA LOJA (fixas) =====
-  // Rua Pernambuco, 629 — Vila Brasil, Barreiras-BA, CEP 47801-370
-  // Fontes de coordenadas do CEP informam lat/lng aproximados:
-  // lat -12.139814, lng -44.9893035
+  // ===== COORDENADAS DA LOJA (fixas — Rua Pernambuco, 629, Vila Brasil, Barreiras-BA) =====
   const STORE_LAT = -12.139814, STORE_LNG = -44.9893035;
-
   // ======================================================================
 
   const $ = sel => document.querySelector(sel);
@@ -384,6 +381,7 @@
     set(k,v){ localStorage.setItem(k, JSON.stringify(v)) },
     del(k){ localStorage.removeItem(k) }
   }
+  const onlyDigits = s => (s||'').replace(/\D/g,'');
 
   let user = store.get('cf_user', null);
   let token = store.get('cf_token', null);
@@ -430,14 +428,25 @@
     searchTO=setTimeout(()=>{ renderMenu(activeCat); }, 120);
   });
 
-  // API helper
+  // API helper (com diagnóstico de erros não-JSON)
   async function api(acao, payload={}){
     try{
-      const res = await fetch(API_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({acao, token, ...payload})});
-      const data = await res.json();
-      if(data.error) throw new Error(data.error);
+      const res = await fetch(API_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({acao, token, ...payload})
+      });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch(e){ throw new Error(`Resposta não-JSON (HTTP ${res.status}). Conteúdo inicial: ${text.slice(0,180)}...`); }
+      if (!res.ok || data.ok === false) throw new Error(data.error || `HTTP ${res.status}`);
       return data;
-    }catch(e){ console.error('API', acao, e); return {ok:false, error: e.message} }
+    }catch(e){
+      console.error('API', acao, e);
+      alert(`Erro na API (${acao}): ${e.message}`);
+      return {ok:false, error:e.message};
+    }
   }
 
   // Carregar dados iniciais
@@ -452,12 +461,12 @@
   async function loadMenu(){
     const data = await api('getMenu');
     if(data.ok){ menu = data.items; } else {
-      // Exemplo local
+      // Fallback local
       menu = [
         {id:'x1', name:'Cheeseburger Clena', desc:'Brioche, burger 160g, queijo e molho da casa.', price:27.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550317138-10000687a72b?q=80&w=800&auto=format&fit=crop'},
         {id:'x2', name:'Smash Duplo', desc:'Dois blends 90g, cheddar, cebola.', price:31.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800&auto=format&fit=crop'},
         {id:'x5', name:'Clena Bacon', desc:'Burger 160g, cheddar, bacon crocante.', price:33.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=800&auto=format&fit=crop'},
-        {id:'x6', name:'Veggie Green', desc:'Burger de grão-de-bico, salada e maionese verde.', price:29.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550547660-16a0e0a1e5c2?q=80&w=800&auto=format&fit=crop'},
+        {id:'x6', name:'Veggie Green', desc:'Grão-de-bico, salada e maionese verde.', price:29.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550547660-16a0e0a1e5c2?q=80&w=800&auto=format&fit=crop'},
         {id:'x3', name:'Batata Rústica', desc:'Páprica e alho.', price:15.9, cat:'Acompanhamentos', img:'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800&auto=format&fit=crop'},
         {id:'x7', name:'Onion Rings', desc:'Anéis de cebola empanados.', price:16.9, cat:'Acompanhamentos', img:'https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?q=80&w=800&auto=format&fit=crop'},
         {id:'d1', name:'Brownie Clena', desc:'Brownie com calda quente.', price:14.9, cat:'Sobremesas', img:'https://images.unsplash.com/photo-1606313564200-e75d5e30476e?q=80&w=800&auto=format&fit=crop'},
@@ -504,6 +513,7 @@
       .forEach(i => grid.appendChild(cardItem(i)));
   }
 
+  // Gating: exige login antes de adicionar
   function requireLoginThen(action){
     if(!user){
       alert('Você precisa estar logado para adicionar itens.');
@@ -562,10 +572,7 @@
 
   // CARRINHO
   function addToCart(item){
-    if(!user){ // segurança extra
-      alert('Faça login para adicionar itens.');
-      setActiveTab('perfil'); showPage('perfil'); return;
-    }
+    if(!user){ alert('Faça login para adicionar itens.'); setActiveTab('perfil'); showPage('perfil'); return; }
     const k = JSON.stringify({id:item.id, comps:item.comps.map(c=>c.id).sort()});
     const found = cart.find(x => JSON.stringify({id:x.id, comps:x.comps.map(c=>c.id).sort()})===k);
     if(found){ found.qty += 1 } else { cart.push(item) }
@@ -732,7 +739,7 @@
     updateAuthUI();
   }
   async function login(){
-    const whatsapp = $('#pwa').value.trim();
+    const whatsapp = onlyDigits($('#pwa').value);
     const senha = $('#ppw').value.trim();
     const r = await api('login', {whatsapp, senha});
     if(r.ok){ 
@@ -745,9 +752,17 @@
     }
   }
   async function signup(){
-    const payload = { nome:$('#s-nome').value.trim(), whatsapp:$('#s-wa').value.trim(), email:$('#s-mail').value.trim(), senha:$('#s-senha').value.trim(), cpf:$('#s-cpf').value.trim(), nasc:$('#s-nasc').value }
+    const payload = { 
+      nome:$('#s-nome').value.trim(),
+      whatsapp:onlyDigits($('#s-wa').value),
+      email:$('#s-mail').value.trim(),
+      senha:$('#s-senha').value.trim(),
+      cpf:onlyDigits($('#s-cpf').value),
+      nasc:$('#s-nasc').value
+    };
     const r = await api('signup', payload);
-    if(r.ok){ alert('Cadastro realizado! Faça o login.'); setActiveTab('perfil'); showPage('perfil'); } else alert('Erro no cadastro: '+(r.error||''))
+    if(r.ok){ alert('Cadastro realizado! Faça o login.'); setActiveTab('perfil'); showPage('perfil'); } 
+    else alert('Erro no cadastro: '+(r.error||''))
   }
   function logout(){ user=null; token=null; store.del('cf_user'); store.del('cf_token'); updateAuthUI(); location.reload() }
 
