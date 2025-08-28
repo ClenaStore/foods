@@ -587,37 +587,17 @@ async function bootFeesHours(){
 })();
 
 
-  async function loadMenu(){
-    const data = await api('getMenu');
-    if(data.ok){ menu = data.items; } else {
-      menu = [
-        {id:'x1', name:'Cheeseburger Clena', desc:'Brioche, burger 160g, queijo e molho da casa.', price:27.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550317138-10000687a72b?q=80&w=800&auto=format&fit=crop'},
-        {id:'x2', name:'Smash Duplo', desc:'Dois blends 90g, cheddar, cebola.', price:31.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800&auto=format&fit=crop'},
-        {id:'x5', name:'Clena Bacon', desc:'Burger 160g, cheddar, bacon crocante.', price:33.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=800&auto=format&fit=crop'},
-        {id:'x6', name:'Veggie Green', desc:'Grão-de-bico, salada e maionese verde.', price:29.9, cat:'Burgers', img:'https://images.unsplash.com/photo-1550547660-16a0e0a1e5c2?q=80&w=800&auto=format&fit=crop'},
-        {id:'x3', name:'Batata Rústica', desc:'Páprica e alho.', price:15.9, cat:'Acompanhamentos', img:'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800&auto=format&fit=crop'},
-        {id:'x7', name:'Onion Rings', desc:'Anéis de cebola empanados.', price:16.9, cat:'Acompanhamentos', img:'https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?q=80&w=800&auto=format&fit=crop'},
-        {id:'d1', name:'Brownie Clena', desc:'Brownie com calda quente.', price:14.9, cat:'Sobremesas', img:'https://images.unsplash.com/photo-1606313564200-e75d5e30476e?q=80&w=800&auto=format&fit=crop'},
-        {id:'d2', name:'Milkshake Ovomaltine', desc:'300 ml', price:17.9, cat:'Sobremesas', img:'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=800&auto=format&fit=crop'},
-        {id:'b1', name:'Refrigerante Lata', desc:'350 ml', price:6.0, cat:'Bebidas', img:'https://images.unsplash.com/photo-1541976076758-347942db1970?q=80&w=800&auto=format&fit=crop'},
-        {id:'b2', name:'Suco Natural', desc:'Laranja ou limão.', price:9.0, cat:'Bebidas', img:'https://images.unsplash.com/photo-1542442828-287ea90b6b32?q=80&w=800&auto=format&fit=crop'},
-        {id:'p1', name:'Combo Clena', desc:'Burger + Batata + Refri', price:42.9, cat:'Combos', img:'https://images.unsplash.com/photo-1550547660-1c00da094a4b?q=80&w=800&auto=format&fit=crop'},
-        {id:'p2', name:'Combo Família', desc:'2 Burgers + 2 Acomp. + 2 Bebidas', price:89.9, cat:'Combos', img:'https://images.unsplash.com/photo-1550547660-08490b1b65f6?q=80&w=800&auto=format&fit=crop'}
-      ];
-    }
-    renderCategories();
-    renderMenu();
-  }
+ async function loadMenu(){
+  const data = await api('getMenu');
+  menu = data.ok ? data.items : [];
+  renderCategories();
+  renderMenu();
+}
+async function loadComplements(){
+  const data = await api('getComplements');
+  complements = data.ok ? data.items : [];
+}
 
-  async function loadComplements(){
-    const data = await api('getComplements');
-    complements = data.ok ? data.items : [
-      {id:'c1', name:'Bacon', price:4.0, tag:'Adicionais'},
-      {id:'c2', name:'Cheddar extra', price:3.5, tag:'Adicionais'},
-      {id:'c3', name:'Molho Clena', price:2.5, tag:'Molhos'},
-      {id:'c4', name:'Barbecue', price:2.5, tag:'Molhos'},
-    ];
-  }
 
   function renderCategories(){
     const cats = ['Tudo', ...new Set(menu.map(i=> i.cat))];
