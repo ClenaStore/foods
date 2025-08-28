@@ -438,25 +438,23 @@
   const STORE_LAT = -12.139814, STORE_LNG = -44.9893035; // Rua Pernambuco, 629 — Vila Brasil
 
   // ====== CONFIG DE TAXAS E HORÁRIOS ======
-  const BAIRROS_TAXAS = {
-    "Vila Brasil": 6.00,
-    "Centro": 7.00,
-    "Sandra Regina": 8.00,
-    "São Pedro": 8.00,
-    "Novo Horizonte": 9.00,
-    "Floresta": 9.50,
-    "Riachinho": 10.00
-  };
-  // Horários por dia (0=Dom ... 6=Sáb). Vazio = fechado.
-  const HORARIOS = {
-    0: ["17:00","23:00"], // Dom
-    1: ["11:00","23:00"], // Seg
-    2: ["11:00","23:00"], // Ter
-    3: ["11:00","23:00"], // Qua
-    4: ["11:00","23:00"], // Qui
-    5: ["11:00","00:00"], // Sex (vira meia-noite)
-    6: ["11:00","00:00"]  // Sáb
-  };
+let BAIRROS_TAXAS = {};
+let HORARIOS = {};
+
+async function bootFeesHours(){
+  const fees = await api('getFees');
+  if(fees.ok){
+    BAIRROS_TAXAS = Object.fromEntries(fees.items.map(f => [f.bairro, Number(f.taxa||0)]));
+    // Preenche datalist de bairros
+    const dl = document.getElementById('bairrosList');
+    if(dl) dl.innerHTML = Object.keys(BAIRROS_TAXAS).map(b => `<option value="${b}">`).join('');
+  }
+  const open = await api('getOpenStatus');
+  if(open.ok){
+    $('#openBadge').innerHTML = (open.open? '🟢 Aberto' : '🔴 Fechado') + ' • ' + open.message;
+  }
+}
+
 
   const $ = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -561,24 +559,21 @@
   }
 
   // ===== Boot =====
-  (async function init(){
-    menuSkeleton(); // mostra skeleton
-    await loadMenu();
-    await loadComplements();
-    if(user) { applyUser(); fetchOrders(); }
-    renderCart();
-    updateAuthUI();
-    setupNotifications();
-    // Endereços + horários
-    addrRenderList();
-    updateOpenBadge();
-    setInterval(updateOpenBadge, 60000);
+(async function init(){
+  menuSkeleton(); 
+  await loadMenu();
+  await loadComplements();
+  if(user) { applyUser(); fetchOrders(); }
+  renderCart();
+  updateAuthUI();
+  setupNotifications();
 
-    // listeners dos campos de endereço (para atualizar taxa)
-    ['f-bairro','f-cep','f-cidade','f-rua','f-num','f-comp'].forEach(id=>{
-      const el = document.getElementById(id); if(el) el.addEventListener('input', calcAndRenderTax);
-    });
-  })();
+  // Endereços + taxas/horários do backend
+  addrRenderList();
+  await bootFeesHours();
+  setInterval(bootFeesHours, 60000);
+})();
+
 
   async function loadMenu(){
     const data = await api('getMenu');
@@ -1079,7 +1074,7 @@
     }
     const items = addrLoad(); items.push({...a, default: items.length===0});
     addrSaveLocal(items); addrClearForm(); addrRenderList();
-    api('saveAddress', {address:a}).catch(()=>{});
+    api('addAddress', {addr:a}).catch(()=>{});
   }
   function addrClearForm(){
     ['a-cep','a-cidade','a-bairro','a-rua','a-num','a-comp'].forEach(id=>{ const el=$('#'+id); if(el) el.value=''; });
@@ -1099,12 +1094,13 @@
     window.addrSave=function(){
       const upd=addrFormToObj('a-'); if(!upd.cidade||!upd.bairro||!upd.rua||!upd.num) return alert('Campos obrigatórios faltando.');
       items[ix]={...items[ix], ...upd}; addrSaveLocal(items); window.addrSave=oldSave; addrClearForm(); addrRenderList();
-      api('saveAddress', {address:items[ix]}).catch(()=>{});
+      api('addAddress', {addr:items[ix]}).catch(()=>{});
     }
   }
   function addrDelete(ix){
     const items=addrLoad(); items.splice(ix,1); addrSaveLocal(items); addrRenderList();
-    api('deleteAddress', {index:ix}).catch(()=>{});
+  // 🔴 Seu backend não tem deleteAddress
+  // aqui só apaga localmente mesmo
   }
 
   // ====== TAXA POR BAIRRO ======
@@ -1218,7 +1214,6 @@
       const dist = haversineKM(latitude, longitude, STORE_LAT, STORE_LNG) * 1000; // m
       if(dist <= 200){
         el.textContent='✅ Check-in confirmado! Você está na loja.';
-        try{ await api('checkinPickup', { lat:latitude, lng:longitude, when: Date.now() }); }catch{}
         store.set('cf_checkin', {lat:latitude,lng:longitude,ts:Date.now()});
       }else{
         el.textContent='⚠️ Você está a ~' + Math.round(dist) + 'm da loja. Aproxime-se para confirmar.';
