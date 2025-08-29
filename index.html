@@ -168,6 +168,28 @@
     .sk-line{height:12px; background:#0f1115; border-radius:8px; margin:8px 0}
     .sk-line.w40{width:40%} .sk-line.w60{width:60%} .sk-line.w80{width:80%}
     .topbar-loader{height:3px; background:linear-gradient(90deg,var(--brand),var(--brand-2)); background-size:200% 100%; animation:move 1.2s linear infinite}
+/* ===== Pedido em aberto (header) ===== */
+.pill .dot{
+  width:10px; height:10px; border-radius:50%;
+  display:inline-block; border:1px solid rgba(255,255,255,.25);
+}
+.dot.red{ background: var(--bad); }
+.dot.orange{ background: var(--warn); }
+.dot.green{ background: var(--ok); }
+
+@keyframes blink { 50% { opacity: .35 } }
+.blink{ animation: blink 1s infinite; }
+
+/* linha do tempo compacta */
+.timeline{ display:inline-flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); white-space:nowrap }
+.timeline .step{ position:relative; padding-left:14px }
+.timeline .step::before{
+  content:""; position:absolute; left:0; top:50%; transform:translateY(-50%);
+  width:8px; height:8px; border-radius:50%; background:#3b4250; border:1px solid #2a2f3c;
+}
+.timeline .step.active{ color:var(--txt); font-weight:600 }
+.timeline .step.active::before{ background:#cbd5e1 }
+.timeline .sep{ opacity:.5 }
 
     @keyframes shimmer{ 100% { transform:translateX(100%)}}
     @keyframes move{ 0%{background-position:0 0} 100%{background-position:200% 0}}
@@ -220,6 +242,14 @@
         </div>
         <span class="pill" id="deliveryArea"><i class="fa-solid fa-motorcycle"></i>&nbsp; Barreiras-BA</span>
         <span class="pill" id="openBadge"><i class="fa-solid fa-clock"></i>&nbsp; Verificando horário…</span>
+        <!-- Pedido em aberto -->
+<span class="pill" id="openOrderCard" style="display:none; cursor:pointer" onclick="openOrderDialog()">
+  <i class="fa-solid fa-motorcycle"></i>
+  <span id="openOrderDot" class="dot blink" style="margin-left:6px"></span>
+  <span id="openOrderTitle" style="font-weight:800;margin-left:6px">Pedido</span>
+  <span id="openOrderTimeline" class="timeline" style="margin-left:10px"></span>
+</span>
+
       </div>
 
       <div id="topbarLoader" class="topbar-loader hidden"></div>
@@ -428,6 +458,18 @@
         </p>
       </div>
     </dialog>
+        <!-- DIALOG RASTRO DO PEDIDO -->
+    <dialog id="dlgOrderTrace">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+        <strong><i class="fa-solid fa-motorcycle"></i> Andamento do Pedido</strong>
+        <button class="btn secondary" onclick="dlgOrderTrace.close()"><i class="fa-solid fa-xmark"></i> Fechar</button>
+      </div>
+      <div id="orderTraceBox" style="display:grid;gap:8px"></div>
+      <div style="margin-top:12px">
+        <button class="btn" onclick="openMapDialog()"><i class="fa-solid fa-route"></i> Ver rota no mapa</button>
+      </div>
+    </dialog>
+
   </div><!-- /#app -->
 
   <!-- DRAWER DO CARRINHO -->
@@ -564,6 +606,84 @@
       box.appendChild(sk);
     }
   }
+      // ===== PEDIDO EM ABERTO =====
+  function normalizeOrderStatus(s){
+    const txt = String(s || '').toLowerCase();
+    if (/(entregue|finalizado|conclu[ií]do)/.test(txt)) return 'Entregue';
+    if (/(saiu|em rota|a caminho)/.test(txt)) return 'Saiu para entrega';
+    if (/(preparando|em preparo)/.test(txt)) return 'Preparando';
+    if (/(enviado|recebido|confirmado|novo|criado)/.test(txt)) return 'Recebido';
+    return 'Recebido';
+  }
+
+  function statusDotClass(status){
+    switch(status){
+      case 'Preparando': return 'orange';
+      case 'Saiu para entrega': return 'green';
+      case 'Recebido': default: return 'red';
+    }
+  }
+
+  function buildTimelineHTML(current){
+    const steps = ['Recebido','Preparando','Saiu para entrega'];
+    const ix = Math.max(steps.indexOf(current), 0);
+    return steps.map((s, i) =>
+      `<span class="step ${i <= ix ? 'active':''}">${s}</span>${i<steps.length-1?'<span class="sep">—</span>':''}`
+    ).join('');
+  }
+
+  function updateOpenOrderCard(orders){
+    try{
+      const box = document.getElementById('openOrderCard');
+      if(!box) return;
+
+      const openOnes = (orders||[])
+        .map(o => ({
+          id: o.id,
+          created_at: o.created_at || o.createdAt || 0,
+          status: normalizeOrderStatus(o.status_pedido || o.status || (o.order && o.order.status_pedido)),
+          trace: o.trace || [] // histórico (se backend enviar)
+        }))
+        .filter(o => o.status !== 'Entregue')
+        .sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+      if(!openOnes.length){
+        box.style.display = 'none';
+        return;
+      }
+
+      const cur = openOnes[0];
+      document.getElementById('openOrderTitle').textContent = `Pedido #${cur.id}`;
+
+      const dot = document.getElementById('openOrderDot');
+      if(dot){
+        dot.classList.remove('red','orange','green');
+        dot.classList.add(statusDotClass(cur.status));
+      }
+
+      const tl = document.getElementById('openOrderTimeline');
+      if(tl) tl.innerHTML = buildTimelineHTML(cur.status);
+
+      box.dataset.trace = JSON.stringify(cur.trace || []);
+      box.dataset.id = cur.id;
+      box.style.display = 'inline-flex';
+    }catch(e){ console.error(e); }
+  }
+
+  function openOrderDialog(){
+    const dlg = document.getElementById('dlgOrderTrace');
+    const box = document.getElementById('orderTraceBox');
+    const trace = JSON.parse(document.getElementById('openOrderCard').dataset.trace || '[]');
+    const id = document.getElementById('openOrderCard').dataset.id;
+
+    box.innerHTML = `<div class="pill">Pedido #${id}</div>` +
+      (trace.length
+        ? trace.map(t => `<div class="pill"><strong>${t.status}</strong> • ${new Date(t.ts).toLocaleString()}</div>`).join('')
+        : '<div class="empty">Ainda não há histórico detalhado deste pedido.</div>');
+
+    dlg.showModal();
+  }
+
 
   // ===== Navegação =====
   $$('.tabbar [data-page]').forEach(btn=>{
@@ -937,7 +1057,8 @@
     renderOrdersList(r.ok ? (r.items||[]) : []);
   }
 
-  function renderOrdersList(items){
+  function renderOrdersList(items){updateOpenOrderCard(items);
+
     const box = $('#ordersList'); box.innerHTML='';
 
     const payMap = { pix:'PIX', credito:'Crédito', debito:'Débito', dinheiro:'Dinheiro' };
@@ -968,6 +1089,8 @@
             <span class="pill">Status Pagto: <strong>${o.status_pagamento || 'Pendente'}</strong></span>
             <span class="pill">Andamento: <strong>${o.status_pedido || 'Recebido'}</strong></span>
             <span class="pill">Total: <strong>${BRL(o.total || 0)}</strong></span>
+            
+            
           </div>`;
         box.appendChild(li);
       });
