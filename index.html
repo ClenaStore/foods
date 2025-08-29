@@ -610,8 +610,8 @@
   function normalizeOrderStatus(s){
     const txt = String(s || '').toLowerCase();
     if (/(entregue|finalizado|conclu[ií]do)/.test(txt)) return 'Entregue';
-    if (/(saiu|em rota|a caminho)/.test(txt)) return 'Saiu para entrega';
-    if (/(preparando|em preparo)/.test(txt)) return 'Preparando';
+    if (/(saiu|em rota|a caminho)/.test(txt)) return 'Entregando';
+    if (/(preparando|em preparo)/.test(txt)) return 'Aceito';
     if (/(enviado|recebido|confirmado|novo|criado)/.test(txt)) return 'Recebido';
     return 'Recebido';
   }
