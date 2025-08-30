@@ -735,11 +735,7 @@ const res = await fetch(API_URL, {
       let data; try{ data = JSON.parse(text); }catch(e){ throw new Error(`Resposta não-JSON (HTTP ${res.status}). ${text.slice(0,160)}...`); }
       if(!res.ok || data.ok===false) throw new Error(data.error || `HTTP ${res.status}`);
       return data;
-    } catch (e) {
-      console.error('API', acao, e);
-      toastErr(`Não foi possível completar: ${acao}. Tente novamente.`);
-      return { ok:false, error: e.message };
-    } finally {
+    }finally {
       showTopbarLoader(false);
     }
   }
