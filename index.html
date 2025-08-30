@@ -115,6 +115,13 @@
     .btn.busy{opacity:.7; pointer-events:none}
     .btn .spin{width:14px;height:14px;border-radius:50%;border:2px solid #fff;border-top-color:transparent;display:inline-block;margin-right:6px;vertical-align:-2px;animation:spin .8s linear infinite}
     .btn:disabled{opacity:.5; cursor:not-allowed}
+    /* Destaque para seleção ativa de pagamento/entrega */
+    .btn.secondary.active{
+      outline:2px solid #f59e0b;
+      box-shadow:0 0 0 3px rgba(245,158,11,.15) inset;
+      border-color:#f59e0b;
+      color:#fff;
+    }
 
     /* ===== TAB BAR ===== */
     .tabbar{
@@ -188,6 +195,43 @@
     .toast i{opacity:.9}
     .toast .close{margin-left:auto; background:transparent; border:0; color:var(--muted); cursor:pointer}
     @keyframes toastIn{from{transform:translateY(8px); opacity:0} to{transform:translateY(0); opacity:1}}
+
+    /* ===== NOTIF DROPDOWN ===== */
+    .notif-dropdown{
+      position: sticky;
+      top: 58px;
+      margin: 8px 14px 0 auto;
+      max-width: 420px;
+      background: linear-gradient(180deg,#181c23,#13171d);
+      border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow);
+      z-index: 55;
+    }
+    .notif-dropdown.hidden{ display:none }
+    .notif-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+    .notif-list{max-height:50vh; overflow:auto}
+    .notif-item{display:flex; gap:10px; padding:10px 12px; border-bottom:1px dashed #273045}
+    .notif-item:last-child{border-bottom:0}
+    .notif-item i{opacity:.85; margin-top:2px}
+    .notif-item .meta{color:var(--muted); font-size:12px}
+    .notif-item.unread{background:#10151d}
+    .notif-list .empty{padding:12px; text-align:center; color:var(--muted)}
+
+    /* ===== PROMO POPUP ===== */
+    .promo-dlg{ border:0; width:min(640px,calc(100vw - 24px)); background:transparent }
+    .promo-dlg::backdrop{ background:rgba(0,0,0,.6) }
+    .promo-wrap{
+      position:relative;
+      background:linear-gradient(180deg,#1a1f27,#14171e);
+      border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:var(--shadow)
+    }
+    .promo-close{
+      position:absolute; right:10px; top:8px; border:0; background:transparent; color:var(--muted); cursor:pointer; font-size:18px
+    }
+    .promo-media{ width:100%; aspect-ratio: 16/9; background:#0f1115; display:grid; place-items:center; border-bottom:1px solid var(--line)}
+    .promo-media img{ width:100%; height:100%; object-fit:cover }
+    .promo-body{ padding:14px }
+    .promo-badge{ display:inline-block; font-size:11px; color:#fff; background:linear-gradient(180deg,#f97316,#ea580c); padding:4px 8px; border-radius:999px; margin-bottom:6px }
+    .promo-cta{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap }
   </style>
 </head>
 <body>
@@ -215,6 +259,12 @@
         <div class="actions">
           <button class="iconbtn" id="btnMap" title="Localização"><i class="fa-solid fa-location-dot"></i></button>
 
+          <!-- 🔔 NOTIFICAÇÕES -->
+          <button class="iconbtn" id="btnNotif" title="Notificações" style="position:relative">
+            <i class="fa-solid fa-bell"></i>
+            <span class="badge" id="notifBadge" style="display:none">0</span>
+          </button>
+
           <button class="iconbtn" id="btnCart" title="Carrinho">
             <i class="fa-solid fa-bag-shopping"></i>
             <span class="badge" id="cartBadge">0</span>
@@ -241,6 +291,17 @@
       <div id="topbarLoader" class="topbar-loader hidden"></div>
       <div class="cats" id="cats"></div>
     </header>
+
+    <!-- DROPDOWN NOTIFICAÇÕES -->
+    <div id="notifDropdown" class="notif-dropdown hidden" role="menu" aria-labelledby="btnNotif">
+      <div class="notif-head">
+        <strong>Notificações</strong>
+        <button class="btn secondary" id="btnMarkRead" style="padding:6px 8px;font-size:12px">Marcar tudo como lido</button>
+      </div>
+      <div id="notifList" class="notif-list">
+        <div class="empty">Sem novas notificações.</div>
+      </div>
+    </div>
 
     <!-- CONTEÚDO -->
     <section class="page" id="page-menu">
@@ -270,6 +331,20 @@
             <button data-pay="pix" class="btn secondary" onclick="selPay(this)">PIX</button>
           </div>
         </label>
+      </div>
+
+      <!-- Troco (mostra se "dinheiro") -->
+      <div id="trocoBox" class="block hidden" style="margin-top:12px">
+        <h3 style="margin:0 0 8px"><i class="fa-solid fa-money-bill-1-wave"></i> Troco</h3>
+        <label style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="trocoNeed" /> Precisa de troco?
+        </label>
+        <div id="trocoAmountWrap" class="hidden" style="margin-top:8px">
+          <label>Troco para
+            <input id="trocoAmount" class="input" placeholder="Ex.: R$ 100,00" />
+          </label>
+          <small style="color:var(--muted)">Informe o valor total que você vai pagar, para calcular o troco.</small>
+        </div>
       </div>
 
       <!-- Endereço -->
@@ -427,23 +502,6 @@
         <button class="btn secondary" id="btnClearRoute"><i class="fa-solid fa-route"></i> Remover rota</button>
       </div>
     </dialog>
-
-    <!-- DIALOG iOS INSTALAÇÃO -->
-    <dialog id="iosInstallDlg" style="max-width:420px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
-        <strong>Instalar no iPhone</strong>
-        <button class="btn secondary" onclick="document.getElementById('iosInstallDlg').close()">
-          <i class="fa-solid fa-xmark"></i> Fechar
-        </button>
-      </div>
-      <div class="block" style="margin:0">
-        <p style="margin:0 0 8px;color:var(--muted)">
-          1) Toque no botão <strong>Compartilhar</strong> do Safari (quadrado com seta).<br>
-          2) Escolha <strong>Adicionar à Tela de Início</strong>.<br>
-          3) Confirme com <strong>Adicionar</strong>.
-        </p>
-      </div>
-    </dialog>
   </div><!-- /#app -->
 
   <!-- DRAWER DO CARRINHO -->
@@ -467,6 +525,27 @@
 
   <!-- TOASTS CONTAINER -->
   <div id="toasts" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- PROMO POPUP -->
+  <dialog id="promoDlg" class="promo-dlg">
+    <div class="promo-wrap">
+      <button class="promo-close" aria-label="Fechar" title="Fechar" onclick="closePromoDlg()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="promo-media">
+        <img id="promoImg" alt="Promoção do dia" loading="lazy"/>
+      </div>
+      <div class="promo-body">
+        <span class="promo-badge">Promoção do dia</span>
+        <h3 id="promoTitle">Desconto especial</h3>
+        <p id="promoDesc">Aproveite hoje um preço imperdível!</p>
+        <div class="promo-cta">
+          <button class="btn" onclick="goPromoCTA()"><i class="fa-solid fa-bag-shopping"></i> Pedir agora</button>
+          <button class="btn secondary" onclick="closePromoDlg()">Depois</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
 
   <script>
   /* ===== Forçar uso em celular ===== */
@@ -531,6 +610,7 @@
   const $$ = sel => Array.from(document.querySelectorAll(sel));
   const BRL = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const digitsOnly = s => String(s||'').replace(/\D/g,'');
+  const parseMoney = s => { if(!s) return NaN; const t = String(s).replace(/\s/g,'').replace(/\./g,'').replace(',', '.').replace(/[^\d.]/g,''); return Number(t); };
   const store = {
     get(k,def){ try{ return JSON.parse(localStorage.getItem(k)) ?? def }catch{ return def } },
     set(k,v){ localStorage.setItem(k, JSON.stringify(v)) },
@@ -542,6 +622,8 @@
   let cart = store.get('cf_cart', []);
   let entrega = 'delivery';
   let payMethod = 'credito';
+  let trocoNeed = false;
+  let trocoPara = null;
   let menu = [];
   let complements = [];
   let activeCat = null;
@@ -564,7 +646,7 @@
   const toastWarn = (m,o)=>notify(m,'warn',o);
   const toastErr  = (m,o)=>notify(m,'err',o);
 
-  /* ===== Helpers ===== */
+  /* ===== HELPERS ===== */
   function setBtnBusy(btn, busy=true, label='Aguarde...'){
     if(!btn) return;
     if(busy){
@@ -646,12 +728,110 @@
     }
   }
 
+  // ===== NOTIFICAÇÕES (sino) =====
+  const NOTIF_KEY = 'cf_notifs';
+  function loadNotifs(){ return store.get(NOTIF_KEY, []); }
+  function saveNotifs(arr){ store.set(NOTIF_KEY, arr); }
+  function setNotifBadge(n){
+    const b = document.getElementById('notifBadge');
+    if(!b) return;
+    if(n>0){ b.textContent = n; b.style.display='grid'; } else { b.style.display='none'; }
+  }
+  function renderNotifDropdown(){
+    const list = document.getElementById('notifList'); if(!list) return;
+    const items = loadNotifs().sort((a,b)=>(b.created_at||0)-(a.created_at||0));
+    if(!items.length){ list.innerHTML = '<div class="empty">Sem novas notificações.</div>'; setNotifBadge(0); return; }
+    list.innerHTML = '';
+    let unread = 0;
+    items.forEach(n=>{
+      const el = document.createElement('div');
+      el.className = 'notif-item' + (n.read? '' : ' unread');
+      if(!n.read) unread++;
+      const icon = n.type==='ok' ? 'fa-circle-check' : n.type==='warn' ? 'fa-triangle-exclamation' : n.type==='err' ? 'fa-circle-xmark' : 'fa-bell';
+      const when = n.created_at ? new Date(n.created_at).toLocaleString() : '';
+      el.innerHTML = `
+        <i class="fa-solid ${icon}"></i>
+        <div>
+          <div><strong>${n.title || 'Notificação'}</strong></div>
+          ${n.message ? `<div>${n.message}</div>`:''}
+          <div class="meta">${when}</div>
+        </div>`;
+      list.appendChild(el);
+    });
+    setNotifBadge(unread);
+  }
+  function toggleNotifDropdown(){
+    $('#notifDropdown').classList.toggle('hidden');
+  }
+  function markAllRead(){
+    const items = loadNotifs().map(n=>({...n, read:true}));
+    saveNotifs(items);
+    renderNotifDropdown();
+  }
+  document.addEventListener('click', (ev)=>{
+    const dd = document.getElementById('notifDropdown');
+    const isBtn = ev.target.closest?.('#btnNotif');
+    if(isBtn){ toggleNotifDropdown(); return; }
+    if(dd && !dd.classList.contains('hidden') && !dd.contains(ev.target)){ dd.classList.add('hidden'); }
+  });
+  document.getElementById('btnMarkRead')?.addEventListener('click', markAllRead);
+
+  // ===== PROMO DO DIA =====
+  const PROMO_SEEN_PREFIX = 'cf_promo_seen_';
+  let currentPromo = null;
+
+  async function fetchDailyPromo(){
+    const r = await api('getDailyPromo').catch(()=>({ok:false}));
+    if(r?.ok && r.item){
+      return {
+        title: r.item.title || 'Promoção especial',
+        desc:  r.item.desc  || 'Aproveite hoje um preço imperdível!',
+        img:   r.item.img   || 'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=2069&auto=format&fit=crop',
+        ctaCat: r.item.ctaCat || null,
+      };
+    }
+    return {
+      title: 'Combo Smash + Refri',
+      desc: 'Só hoje: leve 2 Smash + refri por um preço único!',
+      img: 'https://images.unsplash.com/photo-1551782450-17144c3a95b7?q=80&w=2067&auto=format&fit=crop',
+      ctaCat: 'Combos'
+    };
+  }
+  function showPromoDlg(promo){
+    currentPromo = promo;
+    $('#promoTitle').textContent = promo.title;
+    $('#promoDesc').textContent  = promo.desc;
+    const img = $('#promoImg'); img.src = promo.img; img.alt = promo.title;
+    $('#promoDlg').showModal();
+  }
+  function closePromoDlg(){ $('#promoDlg')?.close(); }
+  function goPromoCTA(){
+    if(currentPromo?.ctaCat){
+      const chip = Array.from(document.querySelectorAll('#cats .chip'))
+        .find(b=> b.textContent.trim().toLowerCase() === currentPromo.ctaCat.toLowerCase());
+      if(chip){ chip.click(); }
+    } else {
+      setActiveTab('menu'); showPage('menu');
+    }
+    closePromoDlg();
+  }
+  async function maybeShowDailyPromo(){
+    const today = new Date();
+    const key = PROMO_SEEN_PREFIX + today.toISOString().slice(0,10).replace(/-/g,'');
+    const already = store.get(key, false);
+    if(already) return;
+    const promo = await fetchDailyPromo().catch(()=>null);
+    if(!promo) return;
+    showPromoDlg(promo);
+    store.set(key, true);
+  }
+
   // ===== Boot =====
   (async function init(){
     menuSkeleton(); 
     await loadMenu();
     await loadComplements();
-    if(user) { 
+    if(user){ 
       applyUser(); 
       await fetchOrders({showSkeleton:true});
       startOrdersAutoRefresh(10000);
@@ -659,11 +839,16 @@
     renderCart();
     updateAuthUI();
     setupNotifications();
-
-    // Endereços + taxas/horários
-    addrRenderList();
+    renderNotifDropdown();
     await bootFeesHours();           // define lojaAberta e atualiza UI
     setInterval(bootFeesHours, 60000);
+    await maybeShowDailyPromo();     // banner 1x por dia
+
+    // Troco listeners
+    $('#trocoNeed').addEventListener('change', ()=>{
+      const on = $('#trocoNeed').checked;
+      $('#trocoAmountWrap').classList.toggle('hidden', !on);
+    });
 
     // Quando a aba volta para o foco, atualiza pedidos
     document.addEventListener('visibilitychange', ()=>{
@@ -855,8 +1040,19 @@
     $$('#page-pedidos [data-pay]').forEach(b=> b.classList.remove('active'));
     btn.classList.add('active'); 
     payMethod = btn.dataset.pay; 
+
+    // PIX visível apenas quando PIX
     $('#pixBox').classList.toggle('hidden', payMethod!=='pix'); 
     if(payMethod==='pix') createPix();
+
+    // Troco visível para dinheiro
+    const showTroco = (payMethod==='dinheiro');
+    $('#trocoBox').classList.toggle('hidden', !showTroco);
+    if(!showTroco){
+      $('#trocoNeed').checked = false;
+      $('#trocoAmount').value = '';
+      $('#trocoAmountWrap').classList.add('hidden');
+    }
   }
   function renderCheckout(){
     const box = $('#checkoutList'); if(!box) return;
@@ -902,13 +1098,31 @@
     }
     const subtotal = cart.reduce((a,it)=> a + (it.price + (it.comps||[]).reduce((x,y)=>x+y.price,0)) * it.qty, 0);
     const shipT = currentShippingTax();
+    const total = subtotal + (entrega==='delivery' ? shipT : 0);
+
+    // Troco (se dinheiro)
+    let troco = null;
+    if(payMethod==='dinheiro'){
+      const need = $('#trocoNeed').checked;
+      if(need){
+        const val = parseMoney($('#trocoAmount').value);
+        if(!val || val < total){
+          return toastWarn('Informe um valor de troco válido (maior ou igual ao total).');
+        }
+        troco = { precisa:true, para: val, troco: Number((val - total).toFixed(2)) };
+      } else {
+        troco = { precisa:false };
+      }
+    }
+
     const order = { 
       entrega, 
       pay: payMethod, 
       endereco, 
       items: cart, 
       taxa_entrega: entrega==='delivery' ? shipT : 0,
-      total: subtotal + (entrega==='delivery'? shipT : 0)
+      total,
+      troco
     };
     const btn = $('#btnFinish'); setBtnBusy(btn,true,'Enviando…');
     const r = await api('createOrder', {order});
@@ -1099,7 +1313,7 @@
   }
   function copyPix(){ const ta = $('#pixCop'); ta.select(); document.execCommand('copy'); toastOk('Código PIX copiado!'); }
 
-  // ===== Notificações (cliente) =====
+  // ===== Notificações (cliente/polling) =====
   let notifSince = Number(store.get('cf_notif_since', Date.now()-3600*1000));
   let pollTimer = null;
   function setupNotifications(){
@@ -1124,15 +1338,17 @@
     }; loop();
   }
   function showNotification(n){
-    const title = n.title || 'Atualização do pedido';
-    const body  = n.message || '';
-    if('Notification' in window && Notification.permission==='granted'){
-      const note = new Notification(title, { body });
-      note.onclick = ()=> { window.focus(); setActiveTab('perfil'); showPage('perfil'); };
-    }else{
-      // sem alerta nativo
-      notify(`<strong>${title}</strong><br>${body}`, 'info', { timeout: 5000 });
-    }
+    const item = {
+      id: n.id || ('loc-' + Date.now() + Math.random()),
+      title: n.title || 'Atualização do pedido',
+      message: n.message || '',
+      type: n.type || 'info',
+      created_at: n.created_at || Date.now(),
+      read: false,
+    };
+    const arr = loadNotifs(); arr.push(item); saveNotifs(arr);
+    renderNotifDropdown();
+    notify(`<strong>${item.title}</strong><br>${item.message}`, 'info', { timeout: 4000 });
     if(n.order_id) fetchOrders({showSkeleton:false});
   }
 
