@@ -1261,7 +1261,7 @@
         map.invalidateSize();
         map.setView([STORE_LAT, STORE_LNG], 16);
       }
-      $('#mapStatus').textContent = '📍 Loja fixa — Rua Pernambuco, 629';
+      $('#mapStatus').textContent = '📍Localização — Rua Pernambuco, 629';
     }, 50);
   }
   $('#btnUseLoc').onclick = ()=>{
@@ -1294,7 +1294,7 @@
     if(routing){ routing.remove(); routing=null; }
     if(userMarker){ userMarker.remove(); userMarker=null; }
     map.setView([STORE_LAT, STORE_LNG], 16);
-    $('#mapStatus').textContent = '📍 Loja fixa • Rota removida';
+    $('#mapStatus').textContent = '📍Loja • Rota removida';
   };
 
   // ===== PIX =====
