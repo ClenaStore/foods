@@ -926,7 +926,7 @@
         <div class="desc">${i.desc||''}</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div class="price">${BRL(i.price)}</div>
-          <button class="btn" ${disabled?'disabled':''} title="${disabled? status.message : 'Adicionar ao carrinho'}">
+          <button class="btn" ${disabled?'disabled':''} title="${disabled? status.message : 'Pedir'}">
             ${disabled ? 'Fechado' : 'Adicionar'}
           </button>
         </div>
@@ -953,7 +953,7 @@
           <h4>Complementos</h4>
           <div style="display:grid;gap:6px;max-height:180px;overflow:auto;padding-right:6px">${compHtml||'<em style="color:var(--muted)">Nenhum complemento cadastrado</em>'}</div>
           <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-            <button class="btn" id="addBtn">Adicionar ao carrinho</button>
+            <button class="btn" id="addBtn">Pedir</button>
             <button class="btn secondary" onclick="dlgItem.close()">Cancelar</button>
           </div>
         </div>
