@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="pt-br">
 <head>
@@ -173,6 +172,22 @@
     @keyframes shimmer{ 100% { transform:translateX(100%)}}
     @keyframes move{ 0%{background-position:0 0} 100%{background-position:200% 0}}
     @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ===== TOASTS ===== */
+    #toasts{position:fixed; left:0; right:0; bottom:12px; display:grid; gap:8px; z-index:99999; padding:0 12px; pointer-events:none}
+    .toast{
+      pointer-events:auto;
+      background:linear-gradient(180deg,#1b2028,#14181f);
+      border:1px solid var(--line); color:var(--txt); border-radius:12px; padding:10px 12px;
+      box-shadow:var(--shadow); display:flex; align-items:center; gap:8px; font-size:13px;
+      animation:toastIn .18s ease;
+    }
+    .toast.ok{border-color:#14532d}
+    .toast.warn{border-color:#7c5b12}
+    .toast.err{border-color:#4c2121}
+    .toast i{opacity:.9}
+    .toast .close{margin-left:auto; background:transparent; border:0; color:var(--muted); cursor:pointer}
+    @keyframes toastIn{from{transform:translateY(8px); opacity:0} to{transform:translateY(0); opacity:1}}
   </style>
 </head>
 <body>
@@ -450,6 +465,9 @@
     </div>
   </aside>
 
+  <!-- TOASTS CONTAINER -->
+  <div id="toasts" aria-live="polite" aria-atomic="true"></div>
+
   <script>
   /* ===== Forçar uso em celular ===== */
   (function enforceMobileOnly(){
@@ -529,6 +547,23 @@
   let activeCat = null;
   const pages = ['menu','complementos','pedidos','perfil'];
 
+  /* ===== TOASTS (substitui alert) ===== */
+  function notify(msg, type='info', opts={}){
+    const root = document.getElementById('toasts'); if(!root) return;
+    const div = document.createElement('div');
+    const icon = type==='ok' ? 'fa-circle-check' : type==='warn' ? 'fa-triangle-exclamation' : type==='err' ? 'fa-circle-xmark' : 'fa-circle-info';
+    div.className = `toast ${type==='ok'?'ok':type==='warn'?'warn':type==='err'?'err':''}`;
+    div.innerHTML = `<i class="fa-solid ${icon}"></i><span>${msg}</span>
+                     <button class="close" aria-label="Fechar" title="Fechar">&times;</button>`;
+    root.appendChild(div);
+    const t = setTimeout(()=> div.remove(), opts.timeout ?? 3500);
+    div.querySelector('.close').onclick = ()=>{ clearTimeout(t); div.remove(); };
+  }
+  const toastInfo = (m,o)=>notify(m,'info',o);
+  const toastOk   = (m,o)=>notify(m,'ok',o);
+  const toastWarn = (m,o)=>notify(m,'warn',o);
+  const toastErr  = (m,o)=>notify(m,'err',o);
+
   /* ===== Helpers ===== */
   function setBtnBusy(btn, busy=true, label='Aguarde...'){
     if(!btn) return;
@@ -604,7 +639,7 @@
       return data;
     } catch (e) {
       console.error('API', acao, e);
-      alert(`Erro na API (${acao}): ${e.message}`);
+      toastErr(`Não foi possível completar: ${acao}. Tente novamente.`);
       return { ok:false, error: e.message };
     } finally {
       showTopbarLoader(false);
@@ -619,7 +654,7 @@
     if(user) { 
       applyUser(); 
       await fetchOrders({showSkeleton:true});
-      startOrdersAutoRefresh(10000);   // <-- auto-refresh a cada 10s
+      startOrdersAutoRefresh(10000);
     }
     renderCart();
     updateAuthUI();
@@ -673,13 +708,13 @@
 
   function requireLoginThen(action){
     if(!user){
-      alert('Você precisa estar logado para adicionar itens.');
+      toastWarn('Faça login para adicionar itens.');
       setActiveTab('perfil'); showPage('perfil');
       return;
     }
     if(!lojaAberta){
       const status = getOpenStatusLocal();
-      alert(`Estamos fechados no momento. ${status.message}.`);
+      toastWarn(`Estamos fechados agora. ${status.message}`);
       return;
     }
     action();
@@ -727,30 +762,32 @@
       </div>`;
     $('#itemBox').innerHTML = html;
     $('#addBtn').onclick = () => {
-      if(!lojaAberta){ const st=getOpenStatusLocal(); alert(`Estamos fechados no momento. ${st.message}.`); return; }
+      if(!lojaAberta){ const st=getOpenStatusLocal(); toastWarn(`Estamos fechados agora. ${st.message}`); return; }
       const chec = Array.from($('#dlgItem').querySelectorAll('input[type=checkbox]:checked'))
                   .map(ch => ({ id: ch.dataset.compid, name: complements.find(c=>c.id===ch.dataset.compid)?.name || 'Extra', price: Number(ch.dataset.compprice) }));
       addToCart({ id:i.id, name:i.name, price:i.price, qty:1, img:i.img, comps:chec });
       dlgItem.close();
       toggleCart(true);
+      toastOk('Item adicionado ao carrinho.');
     }
     $('#dlgItem').showModal();
   }
 
   // ===== CARRINHO =====
   function addToCart(item){
-    if(!user){ alert('Faça login para adicionar itens.'); setActiveTab('perfil'); showPage('perfil'); return; }
-    if(!lojaAberta){ const st=getOpenStatusLocal(); alert(`Estamos fechados no momento. ${st.message}.`); return; }
+    if(!user){ toastWarn('Faça login para adicionar itens.'); setActiveTab('perfil'); showPage('perfil'); return; }
+    if(!lojaAberta){ const st=getOpenStatusLocal(); toastWarn(`Estamos fechados agora. ${st.message}`); return; }
     const k = JSON.stringify({id:item.id, comps:item.comps.map(c=>c.id).sort()});
     const found = cart.find(x => JSON.stringify({id:x.id, comps:x.comps.map(c=>c.id).sort()})===k);
     if(found){ found.qty += 1 } else { cart.push(item) }
     store.set('cf_cart', cart); renderCart();
+    toastOk('Item adicionado ao carrinho.');
   }
   function inc(i){ cart[i].qty++; store.set('cf_cart',cart); renderCart() }
   function dec(i){ cart[i].qty>1? cart[i].qty-- : cart.splice(i,1); store.set('cf_cart',cart); renderCart() }
   function clearCart(){
     if(!cart.length) return;
-    if(confirm('Tem certeza que deseja limpar o carrinho?')){ cart=[]; store.set('cf_cart',cart); renderCart(); }
+    if(confirm('Tem certeza que deseja limpar o carrinho?')){ cart=[]; store.set('cf_cart',cart); renderCart(); toastInfo('Carrinho limpo.'); }
   }
   function currentShippingTax(){
     if(entrega!=='delivery') return 0;
@@ -790,7 +827,7 @@
     renderCheckout();
   }
   function goCheckout(){ 
-    if(!lojaAberta){ const st=getOpenStatusLocal(); alert(`Estamos fechados no momento. ${st.message}.`); return; }
+    if(!lojaAberta){ const st=getOpenStatusLocal(); toastWarn(`Estamos fechados agora. ${st.message}`); return; }
     setActiveTab('pedidos'); showPage('pedidos'); toggleCart(false); window.scrollTo({top:0,behavior:'smooth'}) 
   }
 
@@ -851,14 +888,14 @@
   }
 
   async function finishOrder(){
-    if(!user){ setActiveTab('perfil'); showPage('perfil'); alert('Você precisa estar logado para finalizar o pedido.'); return }
-    if(!cart.length) return alert('Seu carrinho está vazio.');
-    if(!lojaAberta){ const st=getOpenStatusLocal(); alert(`Estamos fechados no momento. ${st.message}.`); return; }
+    if(!user){ setActiveTab('perfil'); showPage('perfil'); toastWarn('Entre na sua conta para finalizar o pedido.'); return }
+    if(!cart.length) return toastInfo('Seu carrinho está vazio.');
+    if(!lojaAberta){ const st=getOpenStatusLocal(); toastWarn(`Estamos fechados agora. ${st.message}`); return; }
 
     let endereco = null;
     if(entrega==='delivery'){
       const required = [['f-cep','CEP'],['f-cidade','Cidade'],['f-bairro','Bairro'],['f-rua','Rua/Avenida'],['f-num','Número']];
-      for(const [id,label] of required){ if(!$('#'+id).value.trim()) return alert('Preencha: '+label); }
+      for(const [id,label] of required){ if(!$('#'+id).value.trim()) return toastWarn('Preencha: '+label); }
       endereco = { cep:$('#f-cep').value, cidade:$('#f-cidade').value, bairro:$('#f-bairro').value, rua:$('#f-rua').value, num:$('#f-num').value, comp:$('#f-comp').value };
       const items = addrLoad();
       if(items.length===0) { items.push({...endereco, default:true}); addrSaveLocal(items); addrRenderList(); }
@@ -878,7 +915,7 @@
     setBtnBusy(btn,false);
     if(!r.ok) return;
     cart=[]; store.set('cf_cart',cart); renderCart();
-    alert('Pedido enviado! Código: '+r.id);
+    toastOk('Pedido enviado! Código: '+r.id);
     setActiveTab('perfil'); showPage('perfil'); fetchOrders({showSkeleton:true});
   }
 
@@ -900,12 +937,12 @@
     if(r.ok){ 
       user=r.user; token=r.token; 
       store.set('cf_user',user); store.set('cf_token',token); 
-      applyUser(); alert('Bem-vindo!'); 
+      applyUser(); toastOk('Bem-vindo!');
       await fetchOrders({showSkeleton:true});
-      startOrdersAutoRefresh(10000);   // <-- liga auto-refresh após login
+      startOrdersAutoRefresh(10000);
       startPolling();
     } else {
-      alert('Falha no login: '+(r.error||'')); 
+      toastErr('Falha no login. Confira os dados e tente novamente.'); 
     }
   }
 
@@ -921,12 +958,12 @@
     };
     const r = await api('signup', payload);
     setBtnBusy(btn,false);
-    if(r.ok){ alert('Cadastro realizado! Faça o login.'); setActiveTab('perfil'); showPage('perfil'); } 
-    else { alert('Erro no cadastro: '+(r.error||'')) }
+    if(r.ok){ toastOk('Cadastro realizado! Faça o login.'); setActiveTab('perfil'); showPage('perfil'); } 
+    else { toastErr('Não foi possível concluir o cadastro.'); }
   }
 
   function logout(){
-    stopOrdersAutoRefresh();         // <-- garante parar o timer
+    stopOrdersAutoRefresh();
     user=null; token=null; store.del('cf_user'); store.del('cf_token'); location.reload()
   }
 
@@ -1022,6 +1059,7 @@
     }, ()=>{
       $('#mapStatus').textContent = '⚠️ Permissão negada';
       setBtnBusy(btn,false,'Ver rota');
+      toastWarn('Permissão de localização negada.');
     });
   };
   $('#btnClearRoute').onclick = ()=>{
@@ -1059,7 +1097,7 @@
     const ta = $('#pixCop'); if(ta) ta.value = payload;
     const cv = $('#pixQr'); if(cv) new QRious({element: cv, value: payload, size: 160});
   }
-  function copyPix(){ const ta = $('#pixCop'); ta.select(); document.execCommand('copy'); alert('Código PIX copiado!'); }
+  function copyPix(){ const ta = $('#pixCop'); ta.select(); document.execCommand('copy'); toastOk('Código PIX copiado!'); }
 
   // ===== Notificações (cliente) =====
   let notifSince = Number(store.get('cf_notif_since', Date.now()-3600*1000));
@@ -1092,7 +1130,8 @@
       const note = new Notification(title, { body });
       note.onclick = ()=> { window.focus(); setActiveTab('perfil'); showPage('perfil'); };
     }else{
-      alert(`${title}\n\n${body}`);
+      // sem alerta nativo
+      notify(`<strong>${title}</strong><br>${body}`, 'info', { timeout: 5000 });
     }
     if(n.order_id) fetchOrders({showSkeleton:false});
   }
@@ -1162,17 +1201,20 @@
   function addrSave(){
     const a = addrFormToObj('a-');
     if(!a.cidade || !a.bairro || !a.rua || !a.num){
-      alert('Preencha cidade, bairro, rua e número.'); return;
+      toastWarn('Preencha cidade, bairro, rua e número.');
+      return;
     }
     const items = addrLoad(); items.push({...a, default: items.length===0});
     addrSaveLocal(items); addrClearForm(); addrRenderList();
     api('addAddress', {addr:a}).catch(()=>{});
+    toastOk('Endereço salvo.');
   }
   function addrClearForm(){
     ['a-cep','a-cidade','a-bairro','a-rua','a-num','a-comp'].forEach(id=>{ const el=$('#'+id); if(el) el.value=''; });
   }
   function addrSetDefault(ix){
     const items=addrLoad(); items.forEach((a,i)=>a.default=(i===ix)); addrSaveLocal(items); addrRenderList();
+    toastOk('Endereço definido como padrão.');
   }
   function addrEdit(ix){
     const items=addrLoad(); const a=items[ix]; if(!a) return;
@@ -1184,13 +1226,15 @@
     $('#a-comp').value=a.comp||'';
     const oldSave=addrSave;
     window.addrSave=function(){
-      const upd=addrFormToObj('a-'); if(!upd.cidade||!upd.bairro||!upd.rua||!upd.num) return alert('Campos obrigatórios faltando.');
+      const upd=addrFormToObj('a-'); if(!upd.cidade||!upd.bairro||!upd.rua||!upd.num) return toastWarn('Preencha os campos obrigatórios.');
       items[ix]={...items[ix], ...upd}; addrSaveLocal(items); window.addrSave=oldSave; addrClearForm(); addrRenderList();
       api('addAddress', {addr:items[ix]}).catch(()=>{});
+      toastOk('Endereço atualizado.');
     }
   }
   function addrDelete(ix){
     const items=addrLoad(); items.splice(ix,1); addrSaveLocal(items); addrRenderList();
+    toastInfo('Endereço removido.');
   }
 
   // ====== TAXA POR BAIRRO & HORÁRIOS (BOOT) ======
@@ -1308,7 +1352,7 @@
       return;
     }
     if (!deferredPrompt) {
-      alert('Se o navegador suportar instalação, um botão aparecerá automaticamente.');
+      toastInfo('Se o navegador suportar instalação, um botão aparecerá automaticamente.');
       return;
     }
     deferredPrompt.prompt();
